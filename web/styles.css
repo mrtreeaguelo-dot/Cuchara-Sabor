@@ -99,6 +99,34 @@ html {
     100% { transform: scale(1); }
 }
 
+/* Custom Select Styles */
+.custom-select-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.custom-select-wrapper select:focus {
+    outline: 2px solid var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.stat-card {
+    transition: var(--transition);
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
+}
+
+.stat-card i {
+    transition: var(--transition);
+}
+
+.stat-card:hover i {
+    transform: scale(1.2) rotate(5deg);
+}
+
 /* Premium Design System Extensions */
 /* Reveal on Scroll */
 .reveal-on-scroll {

@@ -1009,13 +1009,19 @@ class App {
                     </div>
                     
                     <div class="filter-group">
-                        <h3><i class="fa-solid fa-arrow-up-wide-short"></i> Ordenar por</h3>
-                        <select onchange="app.activeFilters.sort = this.value; app.updateExploreGrid();" style="width:100%; padding:0.8rem; border-radius:var(--radius-sm); border:1px solid var(--border-color); background:var(--card-bg); font-family:var(--font-body);">
-                            <option value="default">Relevancia</option>
-                            <option value="calories-low">Menos Calorías</option>
-                            <option value="time-low">Más Rápidas</option>
-                            <option value="protein-high">Más Proteína</option>
-                        </select>
+                        <label style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.8rem; font-weight:700; color:var(--primary-color);">
+                            <i class="fa-solid fa-arrow-down-wide-short"></i> Ordenar por
+                        </label>
+                        <div class="custom-select-wrapper">
+                            <select onchange="app.activeFilters.sort = this.value; app.updateExploreGrid();" style="width:100%; padding:0.9rem; border-radius:var(--radius-md); border:1px solid var(--border-color); background:var(--card-bg); font-family:var(--font-body); cursor:pointer; appearance:none; box-shadow:var(--shadow-sm);">
+                                <option value="default">✨ Relevancia</option>
+                                <option value="calories-low">🥗 Menos Calorías</option>
+                                <option value="time-low">⏱️ Más Rápidas</option>
+                                <option value="protein-high">💪 Más Proteína</option>
+                                <option value="difficulty-easy">🍳 Más Fáciles</option>
+                            </select>
+                            <i class="fa-solid fa-chevron-down" style="position:absolute; right:1rem; top:50%; transform:translateY(-50%); pointer-events:none; color:var(--text-light); font-size:0.8rem;"></i>
+                        </div>
                     </div>
 
                     <div class="filter-group">
@@ -1180,10 +1186,13 @@ class App {
         if (this.activeFilters.sort === 'calories-low') {
             filtered.sort((a, b) => (a.macros?.calories || 0) - (b.macros?.calories || 0));
         } else if (this.activeFilters.sort === 'time-low') {
-            const parseTime = t => parseInt(t.match(/\d+/)[0] || 30);
+            const parseTime = t => parseInt(String(t).match(/\d+/)?.[0] || 30);
             filtered.sort((a, b) => parseTime(a.time) - parseTime(b.time));
         } else if (this.activeFilters.sort === 'protein-high') {
             filtered.sort((a, b) => (b.macros?.protein || 0) - (a.macros?.protein || 0));
+        } else if (this.activeFilters.sort === 'difficulty-easy') {
+            const diffMap = { 'Fácil': 1, 'Media': 2, 'Difícil': 3 };
+            filtered.sort((a, b) => (diffMap[a.difficulty] || 2) - (diffMap[b.difficulty] || 2));
         }
 
         // Update Filter Tags UI
@@ -1217,7 +1226,12 @@ class App {
         if (!container) return;
         
         let tagsHtml = '';
-        const sortNames = { 'calories-low': 'Menos Calorías', 'time-low': 'Más Rápidas', 'protein-high': 'Más Proteína' };
+        const sortNames = { 
+            'calories-low': 'Menos Calorías', 
+            'time-low': 'Más Rápidas', 
+            'protein-high': 'Más Proteína',
+            'difficulty-easy': 'Más Fáciles'
+        };
 
         Object.entries(this.activeFilters).forEach(([key, values]) => {
             if (key === 'searchQuery' && values) {
@@ -2778,15 +2792,20 @@ class App {
                 </div>
 
                 <div style="display:flex; gap:1.5rem; justify-content:center; margin-bottom:3rem; flex-wrap:wrap;">
-                    <div class="stat-card" style="background:linear-gradient(135deg, var(--primary-color), var(--accent-color)); color:white; padding:1.5rem 2rem; border-radius:var(--radius-lg); box-shadow:var(--shadow-md); min-width:200px;">
-                        <i class="fa-solid fa-trophy" style="font-size:2rem; margin-bottom:0.8rem;"></i>
-                        <span class="amount" style="font-size:2.5rem; display:block; font-weight:900;">${this.userStats ? this.userStats.recipesCooked : 0}</span>
-                        <span class="name" style="font-size:0.95rem; font-weight:600; text-transform:uppercase;">Recetas Cocinadas</span>
+                    <div class="stat-card" style="background:linear-gradient(135deg, var(--primary-color), #f39c12); color:white; padding:1.8rem 2rem; border-radius:var(--radius-lg); box-shadow:var(--shadow-lg); min-width:220px; position:relative; overflow:hidden;">
+                        <div style="position:absolute; top:-10px; right:-10px; opacity:0.1; font-size:5rem;"><i class="fa-solid fa-trophy"></i></div>
+                        <span class="amount" style="font-size:3rem; display:block; font-weight:900; line-height:1;">${this.userStats ? this.userStats.recipesCooked : 0}</span>
+                        <span class="name" style="font-size:0.9rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-top:0.5rem; display:block;">
+                            ${(this.userStats?.recipesCooked || 0) === 1 ? 'Receta Cocinada' : 'Recetas Cocinadas'}
+                        </span>
                     </div>
-                    <div class="stat-card" style="background:linear-gradient(135deg, #e74c3c, #c0392b); color:white; padding:1.5rem 2rem; border-radius:var(--radius-lg); box-shadow:var(--shadow-md); min-width:200px;">
-                        <i class="fa-solid fa-fire-flame-curved" style="font-size:2rem; margin-bottom:0.8rem;"></i>
-                        <span class="amount" style="font-size:2.5rem; display:block; font-weight:900;">${this.userStats ? this.userStats.streak : 0} Días</span>
-                        <span class="name" style="font-size:0.95rem; font-weight:600; text-transform:uppercase;">Racha de Fuego</span>
+                    <div class="stat-card" style="background:linear-gradient(135deg, #e74c3c, #c0392b); color:white; padding:1.8rem 2rem; border-radius:var(--radius-lg); box-shadow:var(--shadow-lg); min-width:220px; position:relative; overflow:hidden;">
+                        <div style="position:absolute; top:-10px; right:-10px; opacity:0.1; font-size:5rem;"><i class="fa-solid fa-fire"></i></div>
+                        <span class="amount" style="font-size:3rem; display:block; font-weight:900; line-height:1;">${this.userStats ? this.userStats.streak : 0}</span>
+                        <span class="name" style="font-size:0.9rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-top:0.5rem; display:block;">
+                            ${(this.userStats?.streak || 0) === 1 ? 'Día de Racha' : 'Días de Racha'}
+                        </span>
+                        <div style="font-size:0.75rem; opacity:0.9; margin-top:0.4rem; font-weight:600;"><i class="fa-solid fa-fire-flame-simple"></i> ¡Racha de Fuego!</div>
                     </div>
                 </div>
 
