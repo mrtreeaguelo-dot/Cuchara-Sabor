@@ -6,33 +6,32 @@
 
 ## 🚀 Características Principales
 
-- **🌎 Catálogo Global**: Más de 500 recetas que abarcan culturas desde México hasta Japón, Etiopía y más.
-- **🔄 Smart Substitution (Swap)**: Sistema de intercambio de ingredientes con arquitectura reactiva para sugerencias saludables y funcionales.
+- **🌎 Catálogo Global**: Cerca de 500 recetas que abarcan culturas desde México hasta Japón, Etiopía y más.
+- **🔄 Smart Substitution (Swap)**: *Próximamente* - Sistema de intercambio de ingredientes para sugerencias saludables.
 - **⚖️ Escalado Dinámico**: Ajuste automático de ingredientes y macros según el número de porciones (1-12 personas).
 - **🔋 PWA Ready**: Instalable en dispositivos móviles para uso offline y rendimiento nativo.
-- **🎙️ Control por Voz**: Cocina sin usar las manos con comandos de voz integrados en el modo cocina.
+- **🎙️ Búsqueda por Voz**: Encuentra recetas sin usar las manos con tecnología Web Speech API.
 - **📊 Nutri-Score Dinámico**: Cálculo en tiempo real de la calidad nutricional de cada plato.
 - **🌓 Diseño Premium**: Interfaz moderna con efectos *Glassmorphism*, animaciones fluidas y modo oscuro optimizado.
+
+## ⚠️ Limitaciones Conocidas
+
+- **Autenticación Local**: El sistema de usuarios utiliza `localStorage`. Los datos son específicos del navegador y dispositivo actual; no es apto para entornos de producción con datos sensibles sin un backend real.
+- **Persistencia**: Si borras los datos del sitio en tu navegador, se perderán las recetas favoritas, la despensa y las reseñas publicadas.
 
 ## 🛠️ Tecnologías Utilizadas
 
 - **Frontend**: HTML5 Semántico, CSS3 (Variables, Grid, Flexbox), Vanilla JavaScript (ES6+).
-- **Backend**: Arquitectura sin servidor, persistencia en `localStorage`.
-- **IA**: Asistente ChefiBot integrado para personalización de recetas.
+- **Audio**: Web Audio API para temporizadores sin dependencias externas.
+- **PWA**: Service Workers y Web App Manifest.
 
 ## 📦 Instalación y Despliegue
-
-Si deseas ejecutar este proyecto localmente:
 
 1. Clona el repositorio:
    ```bash
    git clone https://github.com/tu-usuario/cuchara-sabor.git
    ```
-2. Entra en la carpeta:
-   ```bash
-   cd cuchara-sabor
-   ```
-3. Abre `index.html` en tu navegador o usa un servidor local (Live Server).
+2. Abre `index.html` en tu navegador o usa un servidor local (Live Server).
 
 ## 📄 Licencia
 

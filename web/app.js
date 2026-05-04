@@ -592,23 +592,6 @@ class App {
         }, 3000);
     }
 
-    calculateNutriScore(recipe) {
-        if (!recipe.macros) return 'C';
-        const { calories, fats, protein } = recipe.macros;
-        let score = 0;
-        
-        // Very simplified Nutri-Score logic for demo
-        if (calories > 600) score += 5;
-        if (fats > 20) score += 5;
-        if (protein > 20) score -= 5;
-        if (recipe.tags.includes('Vegano')) score -= 2;
-        
-        if (score <= 0) return 'A';
-        if (score <= 3) return 'B';
-        if (score <= 7) return 'C';
-        if (score <= 10) return 'D';
-        return 'E';
-    }
 
     slugify(text) {
         return text.toString().toLowerCase().trim()
@@ -1306,7 +1289,19 @@ class App {
         if (!append) this.recipesToShow = 12;
         
         const recipes = mockRecipes.slice(0, this.recipesToShow);
-        const featuredHtml = recipes.map((recipe, index) => this.createRecipeCard(recipe, index)).join('');
+        const featuredRecipes = [
+            { id: 'curry-lentejas', img: 'https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?w=600&q=80&fit=crop' },
+            { id: 'salmon-esparragos', img: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=600&q=80&fit=crop' },
+            { id: 'sushi-maki', img: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=600&q=80&fit=crop' },
+            { id: 'shakshuka-tunecina', img: 'https://images.unsplash.com/photo-1590412200988-a436970781fa?w=600&q=80&fit=crop' },
+            { id: 'tacos-pastor', img: 'https://images.unsplash.com/photo-1551504734-5ee1c4a1479b?w=600&q=80&fit=crop' },
+            { id: 'pasta-carbonara', img: 'https://images.unsplash.com/photo-1612874742237-6526221588e3?w=600&q=80&fit=crop' }
+        ];
+
+        const featuredHtml = featuredRecipes.map((item, index) => {
+            const recipe = mockRecipes.find(r => r.id === item.id) || mockRecipes[index];
+            return this.createRecipeCard(recipe, index);
+        }).join('');
 
         if (append) {
             const grid = document.querySelector('.recipes-grid');
@@ -1626,19 +1621,183 @@ class App {
 
             <section class="community-section" style="max-width:1000px; margin: 4rem auto;">
                 <h2 style="text-align:center; font-family:var(--font-heading); margin-bottom:1rem;">Opiniones de la Comunidad</h2>
-                <p style="text-align:center; color:var(--text-light); margin-bottom:3rem;">Lo que otros cocinillas opinan de esta receta.</p>
-                
-                <div id="opinions-container">
-                    ${this.renderOpinions(recipe.id)}
+                <!-- [BLOQUE3] Encabezado de Reseñas Rediseñado -->
+                <div class="reviews-header">
+                    <h2 style="margin:0; font-family:var(--font-heading);">Comunidad <em>&</em> Sabor</h2>
+                    <div class="avg-rating-big">
+                        ${this.renderAvgStars(recipe.id)}
+                    </div>
                 </div>
 
-                <div style="text-align:center; margin-top:3rem;">
-                    <button class="btn-action" onclick="app.showCommentForm('${recipe.id}')">
-                        <i class="fa-solid fa-pen"></i> ¡Escribe tu opinión!
-                    </button>
+                <div id="opinions-section">
+                    ${this.activeUser ? `
+                        <div class="review-form-card" id="review-form-container">
+                            <h3 style="margin-bottom:1.5rem;">Comparte tu experiencia</h3>
+                            <div class="star-rating-input" id="star-rating-selector">
+                                ${[1, 2, 3, 4, 5].map(i => `<i class="fa-regular fa-star" data-star="${i}" onclick="app.setRating(${i})" onmouseover="app.hoverStars(${i})" onmouseout="app.resetStars()"></i>`).join('')}
+                            </div>
+                            <div id="rating-error" style="color:var(--primary-color); font-size:0.8rem; margin-bottom:1rem; display:none;">Por favor, selecciona al menos una estrella</div>
+                            
+                            <input type="text" id="review-title" placeholder="Título de tu reseña (ej: ¡Increíble sabor!)" maxlength="60" oninput="app.updateCounter('title-count', this)" style="width:100%; padding:0.8rem; border:1px solid var(--border-color); border-radius:var(--radius-md); margin-bottom:0.5rem;">
+                            <span class="char-counter" id="title-count">60 caracteres restantes</span>
+                            
+                            <textarea id="review-text" placeholder="¿Qué te ha parecido la receta? Cuéntanos los detalles..." maxlength="500" oninput="app.updateCounter('text-count', this)" style="width:100%; min-height:120px; padding:1rem; border:1px solid var(--border-color); border-radius:var(--radius-md); margin-top:1rem; margin-bottom:0.5rem;"></textarea>
+                            <span class="char-counter" id="text-count">500 caracteres restantes</span>
+
+                            <button class="btn-submit-review" onclick="app.submitReview('${recipe.id}')" style="margin-top:1.5rem;">
+                                <span>Publicar Reseña</span>
+                            </button>
+                        </div>
+                    ` : `
+                        <div class="auth-banner-reviews">
+                            <i class="fa-solid fa-comments" style="font-size:3rem; color:var(--primary-color); margin-bottom:1rem; display:block;"></i>
+                            <h3>¿Te ha gustado la receta?</h3>
+                            <p style="color:var(--text-light); margin-bottom:1.5rem;">Inicia sesión para compartir tu opinión con la comunidad.</p>
+                            <button class="btn-action active" onclick="app.showAuthModal('login')" style="margin:0 auto;">Iniciar Sesión</button>
+                        </div>
+                    `}
+
+                    <div id="opinions-container">
+                        ${this.renderOpinions(recipe.id)}
+                    </div>
                 </div>
             </section>
         `;
+    }
+
+    renderAvgStars(recipeId) {
+        const ops = this.opinions[recipeId] || [];
+        if (ops.length === 0) return '<span style="font-size:1rem; color:var(--text-light);">Sin valorar</span>';
+        
+        const avg = ops.reduce((acc, op) => acc + op.rating, 0) / ops.length;
+        return `
+            <span style="color:#f1c40f;"><i class="fa-solid fa-star"></i> ${avg.toFixed(1)}</span>
+            <span style="font-size:0.9rem; color:var(--text-light); font-weight:400;">(${ops.length} opiniones)</span>
+        `;
+    }
+
+    renderOpinions(recipeId) {
+        const ops = (this.opinions[recipeId] || []).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+        
+        if (ops.length === 0) {
+            return `
+                <div style="text-align:center; padding:4rem 0; opacity:0.6;">
+                    <i class="fa-regular fa-comment-dots" style="font-size:3rem; margin-bottom:1rem; display:block;"></i>
+                    <p>Sé el primero en valorar esta receta</p>
+                </div>
+            `;
+        }
+
+        return ops.map(op => `
+            <div class="review-card-alt reveal-on-scroll">
+                <div class="review-user-info">
+                    <div class="review-avatar" style="background:${op.color || 'var(--primary-color)'}">${op.avatar || 'U'}</div>
+                    <div style="flex:1;">
+                        <div style="display:flex; align-items:center;">
+                            <strong style="font-size:1rem;">${op.user}</strong>
+                            ${op.verified ? '<span class="verified-badge"><i class="fa-solid fa-circle-check"></i> Verificado</span>' : ''}
+                        </div>
+                        <small style="color:var(--text-light);">${this.formatRelativeDate(op.date)}</small>
+                    </div>
+                    <div style="color:#f1c40f; font-size:0.85rem;">
+                        ${Array(5).fill(0).map((_, i) => `<i class="fa-${i < op.rating ? 'solid' : 'regular'} fa-star"></i>`).join('')}
+                    </div>
+                </div>
+                <h4 style="margin-bottom:0.5rem; font-weight:700;">${op.title || 'Sin título'}</h4>
+                <p style="color:var(--text-dark); line-height:1.6;">${op.text}</p>
+            </div>
+        `).join('');
+    }
+
+    formatRelativeDate(dateStr) {
+        if (!dateStr) return 'Recientemente';
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diff = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+        
+        if (diff === 0) return 'Hoy';
+        if (diff === 1) return 'Ayer';
+        if (diff < 7) return `Hace ${diff} días`;
+        return date.toLocaleDateString();
+    }
+
+    // [BLOQUE3] Lógica de Formulario de Reseñas
+    selectedRating = 0;
+
+    setRating(rating) {
+        this.selectedRating = rating;
+        const stars = document.querySelectorAll('#star-rating-selector i');
+        stars.forEach((s, i) => {
+            s.className = i < rating ? 'fa-solid fa-star active' : 'fa-regular fa-star';
+        });
+        document.getElementById('rating-error').style.display = 'none';
+    }
+
+    hoverStars(rating) {
+        const stars = document.querySelectorAll('#star-rating-selector i');
+        stars.forEach((s, i) => {
+            if (i < rating) {
+                s.className = 'fa-solid fa-star active';
+                s.style.transform = 'scale(1.1)';
+            }
+        });
+    }
+
+    resetStars() {
+        this.setRating(this.selectedRating);
+        const stars = document.querySelectorAll('#star-rating-selector i');
+        stars.forEach(s => s.style.transform = 'scale(1)');
+    }
+
+    updateCounter(id, el) {
+        const remaining = el.maxLength - el.value.length;
+        document.getElementById(id).textContent = `${remaining} caracteres restantes`;
+    }
+
+    async submitReview(recipeId) {
+        if (this.selectedRating === 0) {
+            document.getElementById('rating-error').style.display = 'block';
+            return;
+        }
+
+        const title = document.getElementById('review-title').value.trim();
+        const text = document.getElementById('review-text').value.trim();
+        const btn = document.querySelector('.btn-submit-review');
+
+        if (text.length < 20) {
+            this.showToast('El comentario debe tener al menos 20 caracteres', 'fa-exclamation-triangle');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Procesando...';
+
+        // Simular latencia de red
+        await new Promise(r => setTimeout(r, 600));
+
+        if (!this.opinions[recipeId]) this.opinions[recipeId] = [];
+        
+        this.opinions[recipeId].push({
+            user: this.activeUser.name,
+            avatar: this.activeUser.avatar,
+            color: 'var(--primary-color)',
+            rating: this.selectedRating,
+            title: this.escapeHTML(title),
+            text: this.escapeHTML(text),
+            date: new Date().toISOString(),
+            likes: 0,
+            verified: (this.userStats.recipesCooked > 0)
+        });
+
+        localStorage.setItem('cuchara_opinions', JSON.stringify(this.opinions));
+        
+        btn.innerHTML = '<i class="fa-solid fa-check success-check"></i> ¡Publicado!';
+        btn.style.background = '#27ae60';
+
+        setTimeout(() => {
+            this.renderRecipe(recipeId);
+            this.showToast('¡Gracias por tu opinión!', 'fa-star');
+        }, 800);
     }
 
     renderOpinions(recipeId) {
@@ -2073,9 +2232,10 @@ class App {
         `;
     }
 
-    async hashPassword(password) {
+    // [BLOQUE1] Seguridad: Hash con sal aleatoria por usuario
+    async hashPassword(password, salt = 'cuchara_salt_2026') {
         const encoder = new TextEncoder();
-        const data = encoder.encode(password + 'cuchara_salt_2026'); // Static salt for simplicity in this demo
+        const data = encoder.encode(password + salt);
         const hash = await crypto.subtle.digest('SHA-256', data);
         return Array.from(new Uint8Array(hash))
             .map(b => b.toString(16).padStart(2, '0'))
@@ -2114,7 +2274,13 @@ class App {
         const passConfirm = document.getElementById('reg-pass-confirm').value;
         const errDiv = document.getElementById('reg-error');
 
-        // Validation
+        // [BLOQUE4] Validación de email con regex
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            errDiv.textContent = 'Introduce un email válido';
+            return;
+        }
+
         const userRegex = /^[a-z0-9_]{3,20}$/;
         if (!userRegex.test(username)) {
             errDiv.textContent = 'El usuario debe tener entre 3 y 20 caracteres (letras, números y _)';
@@ -2136,13 +2302,17 @@ class App {
             return;
         }
 
-        const hashedPassword = await this.hashPassword(pass);
+        // [BLOQUE1] Generación de sal aleatoria
+        const saltArray = crypto.getRandomValues(new Uint8Array(16));
+        const salt = Array.from(saltArray).map(b => b.toString(16).padStart(2, '0')).join('');
+        const hashedPassword = await this.hashPassword(pass, salt);
         
         const newUser = {
             name: this.escapeHTML(name),
             username,
             email: this.escapeHTML(email),
             password: hashedPassword,
+            salt: salt,
             favorites: [],
             shoppingList: [],
             pantry: [],
@@ -2420,9 +2590,16 @@ class App {
         const errDiv = document.getElementById('login-error');
 
         const user = this.users[username];
-        const hashedPassword = await this.hashPassword(pass);
+        if (!user) {
+            errDiv.textContent = 'Usuario o contraseña incorrectos';
+            return;
+        }
 
-        if (user && user.password === hashedPassword) {
+        // [BLOQUE1] Recuperación de sal para validación
+        const salt = user.salt || 'cuchara_salt_2026';
+        const hashedPassword = await this.hashPassword(pass, salt);
+
+        if (user.password === hashedPassword) {
             this.loginUser(user);
             this.showToast(`Hola de nuevo, ${user.name}`, 'fa-hand-wave');
         } else {
@@ -3204,8 +3381,22 @@ class App {
                 btn.innerHTML = `<i class="fa-solid fa-bell fa-shake"></i> ¡Listo!`;
                 btn.style.background = '#27ae60';
                 this.showToast('¡El tiempo ha terminado!', 'fa-bell');
+                // [BLOQUE4] Audio sintetizado con Web Audio API (CSP fix)
+                this.playAlarmSound();
             }
         }, 1000);
+    }
+
+    playAlarmSound() {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.value = 880;
+        osc.type = 'sine';
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1);
+        osc.start(); osc.stop(ctx.currentTime + 1);
     }
 
     prevCookingStep() {

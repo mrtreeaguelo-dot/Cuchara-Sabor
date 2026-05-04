@@ -37,6 +37,161 @@ const mockRecipes = [
         seoSchema: { "@context": "https://schema.org/", "@type": "Recipe", "name": "Curry de Lentejas" }
     },
     {
+        id: 'desayuno-gym-pancakes',
+        title: 'Tortitas de Avena y Plátano (Gym-Ready)',
+        description: 'Desayuno alto en proteínas y carbohidratos complejos, ideal para antes o después de entrenar.',
+        image: 'https://images.unsplash.com/photo-1528207776546-365bb710ee93?w=600&q=80&fit=crop',
+        time: '15 min',
+        difficulty: 'Fácil',
+        category: 'Desayunos',
+        tags: ['Gimnasio', 'Proteico', 'Sin Azúcar'],
+        macros: { calories: 380, protein: 28, carbs: 45, fats: 8 },
+        chefTip: 'Si quieres un extra de textura, añade un puñado de pepitas de chocolate 85% a la masa.',
+        allergens: ['Huevo', 'Gluten'],
+        ingredients: [
+            '2 claras de huevo y 1 huevo entero',
+            '50g de avena molida',
+            '1 plátano maduro machacado',
+            '1 scoop de proteína de vainilla (opcional)',
+            'Canela y esencia de vainilla'
+        ],
+        adaptation: {
+            title: 'Opción Vegana',
+            text: 'Usa "huevo" de lino (1 cda lino + 3 cdas agua) y leche vegetal en lugar del huevo.'
+        },
+        steps: [
+            { text: 'Mezcla todos los ingredientes en una batidora hasta que no queden grumos.', image: null },
+            { text: 'Engrasa una sartén antiadherente y cocina a fuego medio por ambos lados.', image: null },
+            { text: 'Sirve con un chorrito de crema de cacahuete o fruta fresca.', image: null }
+        ],
+        finalResult: 'Tortitas esponjosas y muy nutritivas.',
+        seoSchema: { "@context": "https://schema.org/", "@type": "Recipe", "name": "Tortitas Avena y Plátano" }
+    },
+    {
+        id: 'desayuno-shakshuka',
+        title: 'Shakshuka Tradicional Tunecina',
+        description: 'Huevos escalfados en una salsa de tomate especiada, pimientos y cebolla. Un festín internacional.',
+        image: 'https://images.unsplash.com/photo-1590412200988-a436970781fa?w=600&q=80&fit=crop',
+        time: '25 min',
+        difficulty: 'Media',
+        category: 'Desayunos',
+        tags: ['Internacional', 'Huevos', 'Especiado'],
+        macros: { calories: 290, protein: 18, carbs: 15, fats: 16 },
+        chefTip: 'No cocines demasiado los huevos; la yema debe estar líquida para mojar pan.',
+        allergens: ['Huevo'],
+        ingredients: [
+            '2 huevos frescos',
+            '1 lata de tomate triturado de calidad',
+            '1 pimiento rojo y 1 cebolla',
+            'Comino, pimentón ahumado y harissa (opcional)',
+            'Queso feta y perejil para decorar'
+        ],
+        adaptation: {
+            title: 'Para mojar',
+            text: 'Acompáñalo siempre con un buen pan de pita caliente.'
+        },
+        steps: [
+            { text: 'Sofríe la cebolla y el pimiento hasta que estén muy tiernos.', image: null },
+            { text: 'Añade las especias y el tomate. Deja reducir 10 min.', image: null },
+            { text: 'Haz dos huecos en la salsa, rompe los huevos dentro y tapa hasta que la clara cuaje.', image: null }
+        ],
+        finalResult: 'Un plato vibrante con un sabor intenso a especias.',
+        seoSchema: { "@context": "https://schema.org/", "@type": "Recipe", "name": "Shakshuka Tunecina" }
+    },
+    {
+        id: 'desayuno-french-toast',
+        title: 'French Toast con Canela y Miel',
+        description: 'La versión gourmet de las tostadas francesas, perfectas para un domingo especial.',
+        image: 'https://images.unsplash.com/photo-1484723088339-fe7821a10a6a?w=600&q=80&fit=crop',
+        time: '20 min',
+        difficulty: 'Fácil',
+        category: 'Desayunos',
+        tags: ['Dulce', 'Reposteria', 'Comfort Food'],
+        macros: { calories: 420, protein: 14, carbs: 55, fats: 18 },
+        chefTip: 'Usa pan brioche o de molde grueso de un día anterior para que absorba mejor la mezcla.',
+        allergens: ['Huevo', 'Lácteos', 'Gluten'],
+        ingredients: [
+            '2 rebanadas de pan grueso',
+            '1 huevo y 100ml de leche',
+            'Canela en polvo y azúcar de coco',
+            'Miel pura de abeja',
+            'Mantequilla para la sartén'
+        ],
+        adaptation: {
+            title: 'Topping extra',
+            text: 'Añade nueces picadas para un toque crujiente.'
+        },
+        steps: [
+            { text: 'Bate el huevo con la leche, canela y vainilla.', image: null },
+            { text: 'Sumerge el pan en la mezcla durante 1 min por cada lado.', image: null },
+            { text: 'Dora en mantequilla a fuego medio hasta que caramelice.', image: null }
+        ],
+        finalResult: 'Tostadas crujientes por fuera y cremosas por dentro.',
+        seoSchema: { "@context": "https://schema.org/", "@type": "Recipe", "name": "French Toast Gourmet" }
+    },
+    {
+        id: 'desayuno-avocado-toast',
+        title: 'Huevos con Aguacate y Masa Madre',
+        description: 'El desayuno salado definitivo: tostada crujiente con base cremosa y huevos al punto.',
+        image: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=600&q=80&fit=crop',
+        time: '12 min',
+        difficulty: 'Fácil',
+        category: 'Desayunos',
+        tags: ['Salado', 'Saludable', 'Grasas Buenas'],
+        macros: { calories: 340, protein: 16, carbs: 22, fats: 20 },
+        chefTip: 'Añade unas escamas de sal maldon y copos de chile al final para un toque pro.',
+        allergens: ['Gluten', 'Huevo'],
+        ingredients: [
+            '1 rebanada grande de pan de masa madre',
+            '1/2 aguacate maduro',
+            '2 huevos (revueltos o escalfados)',
+            'Semillas de sésamo negro',
+            'Zumo de lima'
+        ],
+        adaptation: {
+            title: 'Extra de Proteína',
+            text: 'Añade una loncha de salmón ahumado encima del aguacate.'
+        },
+        steps: [
+            { text: 'Tuesta el pan hasta que esté bien crujiente.', image: null },
+            { text: 'Chafa el aguacate con lima y sal. Extiende sobre el pan.', image: null },
+            { text: 'Cocina los huevos y colócalos encima con cuidado.', image: null }
+        ],
+        finalResult: 'Una tostada equilibrada y deliciosa.',
+        seoSchema: { "@context": "https://schema.org/", "@type": "Recipe", "name": "Avocado Toast Premium" }
+    },
+    {
+        id: 'desayuno-overnight-oats',
+        title: 'Overnight Oats con Frutos Rojos',
+        description: 'Desayuno frío sin cocción, ideal para llevar o comer rápido por la mañana.',
+        image: 'https://images.unsplash.com/photo-1516746874112-7d04e7e6005b?w=600&q=80&fit=crop',
+        time: '5 min (+reposo)',
+        difficulty: 'Fácil',
+        category: 'Desayunos',
+        tags: ['Frío', 'Rápido', 'Fibra'],
+        macros: { calories: 280, protein: 12, carbs: 38, fats: 6 },
+        chefTip: 'Prepáralo por la noche en un tarro de cristal para que esté listo al despertar.',
+        allergens: ['Lácteos (opcional)'],
+        ingredients: [
+            '40g copos de avena enteros',
+            '120ml de leche o bebida vegetal',
+            '1 cucharada de semillas de chía',
+            'Frambuesas y arándanos frescos',
+            'Yogur griego'
+        ],
+        adaptation: {
+            title: 'Más Sabor',
+            text: 'Añade una cucharadita de cacao puro para una versión de chocolate.'
+        },
+        steps: [
+            { text: 'Mezcla la avena, leche y chía en un tarro y remueve bien.', image: null },
+            { text: 'Guarda en la nevera un mínimo de 4 horas.', image: null },
+            { text: 'Al servir, añade el yogur y los frutos rojos por encima.', image: null }
+        ],
+        finalResult: 'Una base cremosa con el frescor de la fruta.',
+        seoSchema: { "@context": "https://schema.org/", "@type": "Recipe", "name": "Overnight Oats" }
+    },
+    {
         id: 'salmon-esparragos',
         title: 'Salmón al Horno con Costra de Hierbas',
         description: 'Una cena elegante, ligera y lista en menos de media hora.',
@@ -287,7 +442,7 @@ const mockRecipes = [
         image: 'https://images.unsplash.com/photo-1548943487-a2e4e43b4853?w=600&fit=crop',
         time: '30 min',
         difficulty: 'Fácil',
-        category: 'Desayunos',
+        category: 'Comidas',
         tags: ['Venezolana', 'Sin Gluten', 'Aguacate'],
         chefTip: 'La masa debe estar húmeda pero no pegajosa. Déjala reposar 5 min antes de formar.',
         allergens: ['Sin Gluten', 'Sin lactosa', 'Sin huevo', 'Sin frutos secos'],
