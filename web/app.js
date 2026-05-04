@@ -1207,9 +1207,9 @@ class App {
 
     createTagHtml(type, value, key) {
         return `
-            <div class="filter-tag" style="background:var(--primary-color); color:white; padding:0.4rem 0.8rem; border-radius:20px; font-size:0.8rem; display:flex; align-items:center; gap:0.5rem; animation:fadeIn 0.3s ease; box-shadow:var(--shadow-sm);">
-                <span>${value}</span>
-                <i class="fa-solid fa-xmark" style="cursor:pointer; opacity:0.8;" onclick="app.removeSpecificFilter('${key}', '${value}')"></i>
+            <div class="filter-tag" style="background:var(--primary-color); color:white; padding:0.4rem 1rem; border-radius:50px; font-size:0.85rem; display:flex; align-items:center; gap:0.6rem; animation:fadeIn 0.3s ease; box-shadow:var(--shadow-sm); border:1px solid rgba(255,255,255,0.1);">
+                <span style="font-weight:600;">${value}</span>
+                <i class="fa-solid fa-circle-xmark" style="cursor:pointer; opacity:0.9; transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'" onclick="app.removeSpecificFilter('${key}', '${value}')"></i>
             </div>
         `;
     }
@@ -1226,7 +1226,6 @@ class App {
         }
         this.recipesToShow = 12;
         this.updateExploreGrid();
-    }
     }
 
     renderIngredientLabel(label) {
@@ -1565,9 +1564,9 @@ class App {
                             <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="rgba(0,0,0,0.05)" stroke-width="3" />
                             <path id="radar-progress" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="var(--primary-color)" stroke-width="3" stroke-dasharray="75, 100" style="transition: stroke-dasharray 1s ease;" />
                         </svg>
-                        <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center;">
-                            <strong style="font-size:1.5rem; display:block;">${recipe.macros.calories}</strong>
-                            <small style="font-size:0.7rem; color:var(--text-light); text-transform:uppercase;">Kcal</small>
+                        <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center; width:100%;">
+                            <strong style="font-size:1.4rem; display:block; line-height:1;">${recipe.macros.calories}</strong>
+                            <small style="font-size:0.6rem; color:var(--text-light); text-transform:uppercase; letter-spacing:1px;">Kcal</small>
                         </div>
                     </div>
                     <div class="radar-info" style="flex:1;">
