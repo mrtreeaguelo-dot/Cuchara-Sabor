@@ -1,70 +1,141 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, query, where, getDocs, onSnapshot, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { mockRecipes } from "./recipes.js";
+
+// [BLOQUE-CONFIG] Reemplazar con tu config real de Firebase Console
+const firebaseConfig = {
+    apiKey: "API_KEY_PLACEHOLDER",
+    authDomain: "PROJECT_ID.firebaseapp.com",
+    projectId: "PROJECT_ID",
+    storageBucket: "PROJECT_ID.appspot.com",
+    messagingSenderId: "SENDER_ID",
+    appId: "APP_ID"
+};
+
 class App {
     constructor() {
+        // Robust initialization
+        try {
+            this.app = initializeApp(firebaseConfig);
+            this.auth = getAuth(this.app);
+            this.db = getFirestore(this.app);
+        } catch (e) {
+            console.error("Firebase initialization failed. Ensure firebaseConfig is correct.", e);
+        }
+        
         this.contentDiv = document.getElementById('app-content');
         this.nav = document.getElementById('main-nav');
         this.schemaScript = document.getElementById('schema-markup');
         
-        // Active filters state
+        // Estado local reactivo
+        this.activeUser = null;
+        this.userProfile = null;
+        this.opinions = {};
+        this.shoppingList = [];
+        this.favorites = [];
+        
         this.activeFilters = {
-            category: [],
-            time: [],
-            diet: [],
-            allergen: [],
-            searchQuery: '',
-            goal: [],
-            sort: 'default'
+            category: [], time: [], diet: [], allergen: [], searchQuery: '', goal: [], sort: 'default'
         };
         
-        this.activeUser = JSON.parse(localStorage.getItem('cuchara_active_user')) || null;
-        this.users = JSON.parse(localStorage.getItem('cuchara_users')) || {};
-        
-        // Gamification & Options
-        this.userStats = JSON.parse(localStorage.getItem('cuchara_stats')) || { recipesCooked: 0, streak: 0, lastCookedDate: null };
-        this.opinions = JSON.parse(localStorage.getItem('cuchara_opinions')) || {};
+        this.userStats = { recipesCooked: 0, streak: 0, lastCookedDate: null };
         this.isImperial = false;
         
-        // Voice Control Setup
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if(SpeechRecognition) {
-            this.recognition = new SpeechRecognition();
-            this.recognition.lang = 'es-ES';
-            this.recognition.continuous = true;
-        }
-
-        this.loadUserData();
-        this.initTheme();
-        this.initMacrosAndRecipes();
-        this.updateUserUI();
-        
-        // Initialize app
         this.init();
+        this.listenToAuth();
+        this.listenToOpinions();
+    }
 
-        // Register Service Worker for PWA
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').then(() => {}, () => {});
-            });
+    listenToAuth() {
+        onAuthStateChanged(this.auth, async (user) => {
+            if (user) {
+                this.activeUser = user;
+                await this.syncUserProfile();
+                this.showToast(`Bienvenido/a, ${this.userProfile?.name || user.email}`, 'fa-user-check');
+            } else {
+                this.activeUser = null;
+                this.userProfile = null;
+                this.favorites = [];
+                this.shoppingList = [];
+            }
+            this.updateUserUI();
+            this.updateShoppingBadge();
+            this.renderRoute(window.location.hash.replace('#', '').split('/')[0] || 'home');
+        });
+    }
+
+    async syncUserProfile() {
+        if (!this.activeUser) return;
+        const userDoc = await getDoc(doc(this.db, "users", this.activeUser.uid));
+        if (userDoc.exists()) {
+            this.userProfile = userDoc.data();
+            this.favorites = this.userProfile.favorites || [];
+            this.shoppingList = this.userProfile.shoppingList || [];
+            this.userStats = this.userProfile.stats || { recipesCooked: 0, streak: 0, lastCookedDate: null };
+        } else {
+            // Inicializar perfil si es nuevo
+            this.userProfile = {
+                name: this.activeUser.displayName || 'Usuario',
+                favorites: [],
+                shoppingList: [],
+                stats: { recipesCooked: 0, streak: 0, lastCookedDate: null }
+            };
+            await setDoc(doc(this.db, "users", this.activeUser.uid), this.userProfile);
         }
+    }
 
-        // Global Scroll Progress & Header State
-        const backToTop = document.getElementById('back-to-top');
-        const header = document.querySelector('.main-header');
-        const scrollBar = document.getElementById('scroll-progress');
+    listenToOpinions() {
+        onSnapshot(collection(this.db, "opinions"), (snapshot) => {
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if (!this.opinions[data.recipeId]) this.opinions[data.recipeId] = [];
+                // Evitar duplicados en local
+                if (!this.opinions[data.recipeId].find(op => op.id === doc.id)) {
+                    this.opinions[data.recipeId].push({ id: doc.id, ...data });
+                }
+            });
+            // Si estamos en una vista de receta, refrescar opiniones
+            const route = window.location.hash.split('/')[0];
+            if (route === '#recipe') {
+                const opinionsGrid = document.getElementById('opinions-container');
+                if (opinionsGrid) opinionsGrid.innerHTML = this.renderOpinions(window.location.hash.split('/')[1]);
+            }
+        });
+    }
+    init() {
+        // Evento cambio de Hash
+        window.addEventListener('hashchange', () => {
+            const route = window.location.hash.replace('#', '').split('/')[0] || 'home';
+            const params = window.location.hash.replace('#', '').split('/')[1];
+            this.renderRoute(route, params);
+            this.updateNavHighlight(route);
+        });
 
+        // Listener de Scroll para barra de progreso y efectos
         window.addEventListener('scroll', () => {
-            const scrolled = window.scrollY > 50;
-            if (backToTop) backToTop.classList.toggle('visible', window.scrollY > 400);
-            if (header) header.classList.toggle('scrolled', scrolled);
-
-            // Update Progress Bar
             const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+            const scrollBar = document.getElementById('scroll-progress');
             const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
             const scrolledPercent = (winScroll / height) * 100;
             if (scrollBar) scrollBar.style.width = scrolledPercent + "%";
+
+            // Revelar elementos al hacer scroll
+            document.querySelectorAll('.reveal-on-scroll').forEach(el => {
+                const rect = el.getBoundingClientRect();
+                if (rect.top < window.innerHeight - 100) {
+                    el.classList.add('revealed');
+                }
+            });
         });
 
-        // Update shopping badge
+        // Inicializar UI y decoración
         this.updateShoppingBadge();
+        this.initBackgroundDecor();
+        
+        // Estado de paginación
+        this.recipesToShow = 12;
+        this.allRecipes = mockRecipes;
 
         // Ocultar pantalla de carga
         setTimeout(() => {
@@ -72,13 +143,11 @@ class App {
             if (loader) {
                 loader.classList.add('loader-hidden');
             }
+            // Primera carga de ruta
+            const route = window.location.hash.replace('#', '').split('/')[0] || 'home';
+            const params = window.location.hash.replace('#', '').split('/')[1];
+            this.renderRoute(route, params);
         }, 800);
-
-        this.initBackgroundDecor();
-        
-        // Pagination state
-        this.recipesToShow = 12;
-        this.allRecipes = mockRecipes;
     }
 
     initBackgroundDecor() {
@@ -119,20 +188,7 @@ class App {
         }
     }
 
-    loadUserData() {
-        if (this.activeUser) {
-            const userKey = this.activeUser.username;
-            this.favorites = JSON.parse(localStorage.getItem(`cuchara_favs_${userKey}`)) || [];
-            this.shoppingList = JSON.parse(localStorage.getItem(`cuchara_shop_${userKey}`)) || [];
-            this.activePlan = JSON.parse(localStorage.getItem(`cuchara_plan_${userKey}`)) || null;
-            this.pantry = JSON.parse(localStorage.getItem(`cuchara_pantry_${userKey}`)) || [];
-        } else {
-            this.favorites = [];
-            this.shoppingList = [];
-            this.activePlan = null;
-            this.pantry = [];
-        }
-    }
+
 
     updateUserUI() {
         const container = document.getElementById('user-dropdown-container');
@@ -475,9 +531,12 @@ class App {
         }
     }
 
-    toggleFavorite(id, event) {
+    async toggleFavorite(id, event) {
         if (event) event.stopPropagation();
-        if (!this.checkAuth()) return;
+        if (!this.activeUser) {
+            this.showAuthModal('login');
+            return;
+        }
         
         const index = this.favorites.indexOf(id);
         if (index > -1) {
@@ -487,7 +546,11 @@ class App {
             this.favorites.push(id);
             this.showToast('Añadida a favoritos', 'fa-heart');
         }
-        localStorage.setItem(`cuchara_favs_${this.activeUser.username}`, JSON.stringify(this.favorites));
+
+        await updateDoc(doc(this.db, "users", this.activeUser.uid), {
+            favorites: this.favorites
+        });
+        
         this.updateFavoriteUI(id);
     }
 
@@ -511,45 +574,31 @@ class App {
         }
     }
 
-    addToShoppingList(recipeId, event) {
+    async addToShoppingList(recipeId, event) {
         if (event) event.stopPropagation();
-        if (!this.checkAuth()) return;
+        if (!this.activeUser) {
+            this.showAuthModal('login');
+            return;
+        }
+        
         const recipe = mockRecipes.find(r => r.id === recipeId);
         if (!recipe) return;
         
         let addedCount = 0;
-        let skippedCount = 0;
-
         recipe.ingredients.forEach(ing => {
-            const inPantry = this.pantryItems && this.pantryItems.some(p => ing.toLowerCase().includes(p.toLowerCase()));
-            
-            if (!inPantry) {
-                let cat = 'General';
-                const lower = ing.toLowerCase();
-                if(lower.match(/pollo|carne|cerdo|ternera|pescado|salmón|merluza/)) cat = '🥩 Proteínas';
-                else if(lower.match(/tomate|cebolla|manzana|aguacate|ajo|limón|espárrago/)) cat = '🥬 Frescos';
-                else if(lower.match(/leche|queso|yogur|mantequilla|nata/)) cat = '🧀 Lácteos';
-                else if(lower.match(/arroz|pasta|garbanzos|harina|pan/)) cat = '🌾 Despensa Básica';
-
-                const shopItem = `${ing} [${cat}]`;
-                
-                if (!this.shoppingList.some(item => item.includes(ing))) {
-                    this.shoppingList.push(shopItem);
-                    addedCount++;
-                }
-            } else {
-                skippedCount++;
+            const shopItem = `${ing}`;
+            if (!this.shoppingList.includes(shopItem)) {
+                this.shoppingList.push(shopItem);
+                addedCount++;
             }
         });
         
-        localStorage.setItem(`cuchara_shop_${this.activeUser.username}`, JSON.stringify(this.shoppingList));
-        this.updateShoppingBadge();
+        await updateDoc(doc(this.db, "users", this.activeUser.uid), {
+            shoppingList: this.shoppingList
+        });
         
-        if (skippedCount > 0) {
-            this.showToast(`Añadidos ${addedCount} items. (Omitidos ${skippedCount} que ya tenías)`, 'fa-cart-plus');
-        } else {
-            this.showToast('Ingredientes añadidos a tu lista', 'fa-cart-plus');
-        }
+        this.updateShoppingBadge();
+        this.showToast(`${addedCount} ingredientes añadidos`, 'fa-cart-plus');
     }
 
     updateShoppingBadge() {
@@ -785,38 +834,47 @@ class App {
         }
     }
 
+    renderPersonalizedSection() {
+        if (!this.activeUser || !this.userProfile || !this.userProfile.goal) return '';
+        
+        const goal = this.userProfile.goal;
+        const recs = mockRecipes.filter(r => r.tags.includes(goal)).slice(0, 4);
+        
+        if (recs.length === 0) return '';
+        
+        const recsHtml = recs.map((r, i) => this.createRecipeCard(r, i)).join('');
+        
+        return `
+            <section class="reveal-on-scroll" style="max-width:1400px; margin: 0 auto 6rem; padding: 0 2rem;">
+                <div style="display:flex; justify-content:space-between; align-items:end; margin-bottom:3rem;">
+                    <div>
+                        <h2 style="margin:0; font-size:2.8rem; line-height:1.2;">Especialmente para <span style="color:var(--primary-color);">${this.userProfile.name}</span></h2>
+                        <p style="color:var(--text-light); margin-top:0.5rem; font-size:1.1rem;">Selección basada en tu objetivo de <strong>${goal}</strong>.</p>
+                    </div>
+                </div>
+                <div class="recipes-grid">
+                    ${recsHtml}
+                </div>
+            </section>
+        `;
+    }
+
     renderHome() {
-        // Featured recipes
         const featuredHtml = mockRecipes.slice(0, 12).map((recipe, index) => this.createRecipeCard(recipe, index)).join('');
 
         this.contentDiv.innerHTML = `
-            <div class="blob" style="top:10%; left:-5%;"></div>
-            <div class="blob" style="bottom:10%; right:-5%; background:radial-gradient(circle, rgba(231,76,60,0.05) 0%, rgba(231,76,60,0) 70%);"></div>
-
             <section class="hero glass-effect" style="position:relative; overflow:hidden; border-radius: var(--radius-xl); margin: 1rem 0 3rem; padding: 6rem 2rem;">
-                <div class="hero-decor" style="top:-100px; left:-100px;"></div>
-                <div class="hero-decor" style="bottom:-100px; right:-100px;"></div>
-                
                 <div class="fade-in" style="position:relative; z-index:10;">
-                    <span class="goal-badge mantener" style="margin-bottom: 1.5rem; font-size: 0.9rem; padding: 0.5rem 1.5rem; box-shadow: var(--shadow-sm);">
+                    <span class="goal-badge mantener" style="margin-bottom: 1.5rem; font-size: 0.9rem; padding: 0.5rem 1.5rem;">
                         <i class="fa-solid fa-sparkles"></i> Tu compañero de cocina inteligente
                     </span>
                     <h1 style="font-size: 4.5rem; margin-bottom: 1rem;">Cuchara <em>&</em> Sabor</h1>
-                    <p style="max-width:700px; margin: 0 auto 2.5rem; font-size: 1.25rem;">Descubre recetas saludables adaptadas a tus objetivos, gestiona tu despensa y cocina con ChefiBot.</p>
+                    <p style="max-width:700px; margin: 0 auto 2.5rem; font-size: 1.25rem;">Descubre recetas saludables adaptadas a tus objetivos y cocina con IA.</p>
                     
-                    <div class="search-bar glass-effect" style="max-width: 700px; margin: 0 auto; box-shadow: var(--shadow-lg); position:relative; overflow:hidden;">
+                    <div class="search-bar glass-effect" style="max-width: 700px; margin: 0 auto;">
                         <i class="fa-solid fa-magnifying-glass" style="margin-left:1.5rem; color:var(--text-light);"></i>
-                        <input type="text" id="home-search" placeholder="¿Qué te apetece cocinar hoy?..." onkeypress="if(event.key==='Enter') app.handleSearch('home-search')" style="flex:1;">
-                        <button onclick="app.startVoiceSearch()" style="background:none; border:none; color:var(--primary-color); padding:0 1.5rem; cursor:pointer; font-size:1.2rem;" title="Búsqueda por voz">
-                            <i class="fa-solid fa-microphone"></i>
-                        </button>
-                        <button onclick="app.handleSearch('home-search')" style="padding: 0 2.5rem; border-radius:0;">Buscar</button>
-                    </div>
-
-                    <div style="margin-top: 2.5rem; display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap;">
-                        <button class="btn-action active" onclick="app.navigate('explore')" style="padding: 1rem 2.5rem; font-size: 1.05rem;">
-                            <i class="fa-solid fa-compass"></i> Explorar Catálogo
-                        </button>
+                        <input type="text" id="home-search" placeholder="¿Qué te apetece cocinar hoy?..." onkeypress="if(event.key==='Enter') app.handleSearch('home-search')">
+                        <button onclick="app.handleSearch('home-search')" style="padding: 0 2.5rem;">Buscar</button>
                     </div>
                 </div>
             </section>
@@ -856,43 +914,29 @@ class App {
 
             <section class="categories-carousel fade-in-stagger" style="margin-bottom: 5rem;">
                 <button class="category-btn" onclick="app.navigate('explore', 'Desayunos')"><i class="fa-solid fa-mug-hot"></i> Desayunos</button>
-                <button class="category-btn" onclick="app.navigate('explore', 'Almuerzos')"><i class="fa-solid fa-utensils"></i> Almuerzos</button>
+                <button class="category-btn" onclick="app.navigate('explore', 'Comidas')"><i class="fa-solid fa-utensils"></i> Comidas</button>
                 <button class="category-btn" onclick="app.navigate('explore', 'Cenas')"><i class="fa-solid fa-moon"></i> Cenas</button>
                 <button class="category-btn" onclick="app.navigate('explore', 'Postres')"><i class="fa-solid fa-ice-cream"></i> Postres</button>
-                <button class="category-btn" onclick="app.navigate('explore', 'Vegano')"><i class="fa-solid fa-leaf"></i> Vegano</button>
             </section>
 
+            ${this.renderPersonalizedSection()}
 
             <section class="reveal-on-scroll" style="max-width:1400px; margin: 0 auto 6rem; padding: 0 2rem;">
-                <div style="display:flex; justify-content:space-between; align-items:end; margin-bottom:3rem;">
-                    <div>
-                        <h2 class="reveal-on-scroll" style="margin:0; font-size:2.8rem; line-height:1.2;">Selección <span style="color:var(--primary-color);">Premium</span></h2>
-                        <p class="reveal-on-scroll" style="color:var(--text-light); margin-top:0.5rem; font-size:1.1rem;">Recetas curadas por expertos para tu bienestar.</p>
-                    </div>
-                    <a href="#" onclick="app.navigate('explore'); return false;" class="reveal-on-scroll" style="color:var(--primary-color); font-weight:700; font-size:1.1rem; display:flex; align-items:center; gap:0.5rem;">Explorar todas <i class="fa-solid fa-chevron-right"></i></a>
+                <h2 style="font-size:2.8rem; margin-bottom:3rem;">Selección <span style="color:var(--primary-color);">Premium</span></h2>
+                <div class="recipes-grid">
+                    ${featuredHtml}
                 </div>
-                    <div class="recipes-grid">
-                        ${featuredHtml}
-                    </div>
-                    ${this.recipesToShow < mockRecipes.length ? `
-                        <div style="text-align:center; margin-top:4rem;">
-                            <button id="load-more-btn" class="btn-action" onclick="app.loadMoreRecipes()" style="padding:1rem 3rem; font-size:1.1rem; border-radius:var(--radius-lg); background:rgba(211, 84, 0, 0.05); border-color:var(--primary-color); color:var(--primary-color);">
-                                <i class="fa-solid fa-plus"></i> Ver más recetas
-                            </button>
-                        </div>
-                    ` : ''}
-                </section>
+                <div style="text-align:center; margin-top:4rem;">
+                    <button class="btn-action" onclick="app.navigate('explore')">Ver más recetas</button>
+                </div>
+            </section>
 
-            <section class="glass-effect reveal-on-scroll" style="max-width:1200px; margin: 6rem auto; padding: 5rem; border-radius: var(--radius-xl); text-align:center; position:relative; overflow:hidden;">
-                <div style="position:absolute; top:-20px; right:-20px; font-size:12rem; opacity:0.04; color:var(--primary-color); transform:rotate(15deg);"><i class="fa-solid fa-robot"></i></div>
-                <span style="background:rgba(39,174,96,0.1); color:var(--accent-color); padding:0.5rem 1rem; border-radius:30px; font-weight:700; font-size:0.8rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:1.5rem; display:inline-block;">Asistente de Cocina IA</span>
+            <section class="glass-effect reveal-on-scroll" style="max-width:1200px; margin: 6rem auto; padding: 5rem; border-radius: var(--radius-xl); text-align:center;">
                 <h2 style="font-size:3rem; margin-bottom:1.5rem;">¿Dudas con los ingredientes?</h2>
-                <p style="max-width:750px; margin: 0 auto 3rem; font-size:1.2rem; color:var(--text-light); line-height:1.7;">Dile a ChefiBot qué tienes en tu nevera y diseñará la receta perfecta optimizada para tus macros y objetivos actuales.</p>
-                <div style="display:flex; justify-content:center; gap:1.5rem;">
-                    <button class="auth-btn" style="max-width:320px; padding: 1.2rem;" onclick="app.toggleChefibot()">
-                        <i class="fa-solid fa-comment-dots"></i> Iniciar Chat con ChefiBot
-                    </button>
-                </div>
+                <p style="max-width:750px; margin: 0 auto 3rem; font-size:1.2rem; color:var(--text-light);">Dile a ChefiBot qué tienes en tu nevera y diseñará la receta perfecta.</p>
+                <button class="auth-btn" style="max-width:320px;" onclick="app.toggleChefibot()">
+                    <i class="fa-solid fa-comment-dots"></i> Iniciar Chat con ChefiBot
+                </button>
             </section>
         `;
     }
@@ -1394,31 +1438,7 @@ class App {
                     </div>
                     <a href="#" onclick="app.navigate('explore'); return false;" class="reveal-on-scroll" style="color:var(--primary-color); font-weight:700; font-size:1.1rem; display:flex; align-items:center; gap:0.5rem;">Explorar todas <i class="fa-solid fa-chevron-right"></i></a>
                 </div>
-                <div class="recipes-grid">
-                    ${featuredHtml}
-                </div>
-                ${this.recipesToShow < mockRecipes.length ? `
-                    <div style="text-align:center; margin-top:4rem;">
-                        <button id="load-more-btn" class="btn-action" onclick="app.loadMoreRecipes()" style="padding:1rem 3rem; font-size:1.1rem; border-radius:var(--radius-lg); background:rgba(211, 84, 0, 0.05); border-color:var(--primary-color); color:var(--primary-color);">
-                            <i class="fa-solid fa-plus"></i> Ver más recetas
-                        </button>
-                    </div>
-                ` : ''}
-            </section>
 
-            <section class="glass-effect reveal-on-scroll" style="max-width:1200px; margin: 6rem auto; padding: 5rem; border-radius: var(--radius-xl); text-align:center; position:relative; overflow:hidden;">
-                <div style="position:absolute; top:-20px; right:-20px; font-size:12rem; opacity:0.04; color:var(--primary-color); transform:rotate(15deg);"><i class="fa-solid fa-robot"></i></div>
-                <span style="background:rgba(39,174,96,0.1); color:var(--accent-color); padding:0.5rem 1rem; border-radius:30px; font-weight:700; font-size:0.8rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:1.5rem; display:inline-block;">Asistente de Cocina IA</span>
-                <h2 style="font-size:3rem; margin-bottom:1.5rem;">¿Dudas con los ingredientes?</h2>
-                <p style="max-width:750px; margin: 0 auto 3rem; font-size:1.2rem; color:var(--text-light); line-height:1.7;">Dile a ChefiBot qué tienes en tu nevera y diseñará la receta perfecta optimizada para tus macros y objetivos actuales.</p>
-                <div style="display:flex; justify-content:center; gap:1.5rem;">
-                    <button class="auth-btn" style="max-width:320px; padding: 1.2rem;" onclick="app.toggleChefibot()">
-                        <i class="fa-solid fa-comment-dots"></i> Iniciar Chat con ChefiBot
-                    </button>
-                </div>
-            </section>
-        `;
-    }
 
     renderRecipe(id) {
         const recipe = mockRecipes.find(r => r.id === id);
@@ -1755,6 +1775,10 @@ class App {
     }
 
     async submitReview(recipeId) {
+        if (!this.activeUser) {
+            this.showAuthModal('login');
+            return;
+        }
         if (this.selectedRating === 0) {
             document.getElementById('rating-error').style.display = 'block';
             return;
@@ -1770,34 +1794,30 @@ class App {
         }
 
         btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Procesando...';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Publicando...';
 
-        // Simular latencia de red
-        await new Promise(r => setTimeout(r, 600));
+        try {
+            await addDoc(collection(this.db, "opinions"), {
+                recipeId,
+                userId: this.activeUser.uid,
+                user: this.userProfile?.name || 'Cocinilla',
+                avatar: (this.userProfile?.name || 'U')[0].toUpperCase(),
+                rating: this.selectedRating,
+                title: this.escapeHTML(title),
+                text: this.escapeHTML(text),
+                date: new Date().toISOString(),
+                verified: (this.userStats.recipesCooked > 0),
+                createdAt: serverTimestamp()
+            });
 
-        if (!this.opinions[recipeId]) this.opinions[recipeId] = [];
-        
-        this.opinions[recipeId].push({
-            user: this.activeUser.name,
-            avatar: this.activeUser.avatar,
-            color: 'var(--primary-color)',
-            rating: this.selectedRating,
-            title: this.escapeHTML(title),
-            text: this.escapeHTML(text),
-            date: new Date().toISOString(),
-            likes: 0,
-            verified: (this.userStats.recipesCooked > 0)
-        });
-
-        localStorage.setItem('cuchara_opinions', JSON.stringify(this.opinions));
-        
-        btn.innerHTML = '<i class="fa-solid fa-check success-check"></i> ¡Publicado!';
-        btn.style.background = '#27ae60';
-
-        setTimeout(() => {
-            this.renderRecipe(recipeId);
-            this.showToast('¡Gracias por tu opinión!', 'fa-star');
-        }, 800);
+            btn.innerHTML = '<i class="fa-solid fa-check success-check"></i> ¡Publicado!';
+            btn.style.background = '#27ae60';
+            setTimeout(() => this.renderRecipe(recipeId), 800);
+        } catch (error) {
+            this.showToast('Error al publicar', 'fa-circle-exclamation');
+            btn.disabled = false;
+            btn.innerHTML = 'Publicar Reseña';
+        }
     }
 
     renderOpinions(recipeId) {
@@ -2011,9 +2031,17 @@ class App {
         `;
     }
 
-    generateMealPlan(goal, event) {
+    async generateMealPlan(goal, event) {
         document.querySelectorAll('.planner-card').forEach(card => card.classList.remove('active'));
         if(event) event.currentTarget.classList.add('active');
+
+        // Sync goal to profile
+        if (this.activeUser) {
+            const mappedGoal = goal === 'perder' ? 'Perder peso' : (goal === 'ganar' ? 'Ganar peso' : 'Para todos');
+            await updateDoc(doc(this.db, "users", this.activeUser.uid), { goal: mappedGoal });
+            this.userProfile.goal = mappedGoal;
+            this.showToast('Objetivo actualizado en tu nube', 'fa-cloud-arrow-up');
+        }
 
         let breakfast, lunch, dinner, snack;
 
@@ -2074,11 +2102,13 @@ class App {
     }
 
 
-    clearShoppingList() {
-        if (!this.checkAuth()) return;
-        if(confirm("¿Estás seguro de querer vaciar toda la lista de la compra?")) {
+    async clearShoppingList() {
+        if (!this.activeUser) return;
+        if(confirm("¿Estás seguro de querer vaciar toda la lista?")) {
             this.shoppingList = [];
-            localStorage.setItem(`cuchara_shop_${this.activeUser.username}`, JSON.stringify(this.shoppingList));
+            await updateDoc(doc(this.db, "users", this.activeUser.uid), {
+                shoppingList: []
+            });
             this.updateShoppingBadge();
             this.showToast('Lista vaciada', 'fa-broom');
             this.renderShoppingList();
@@ -2198,8 +2228,8 @@ class App {
                 <p style="color:var(--text-light); font-size:0.9rem;">Accede a tus recetas favoritas y planes.</p>
             </div>
             <form onsubmit="event.preventDefault(); app.handleLogin();">
-                <input type="text" id="login-user" class="auth-input" placeholder="Nombre de usuario" required maxlength="20" pattern="[a-z0-9_]{3,20}">
-                <input type="password" id="login-pass" class="auth-input" placeholder="Contraseña" required maxlength="50">
+                <input type="email" id="login-email" class="auth-input" placeholder="Correo electrónico" required>
+                <input type="password" id="login-pass" class="auth-input" placeholder="Contraseña" required>
                 <div id="login-error" class="auth-error"></div>
                 <button type="submit" class="auth-btn">Entrar</button>
             </form>
@@ -2215,7 +2245,6 @@ class App {
                 <h2 style="margin-bottom:0.3rem; color:var(--primary-color);">Crear tu cuenta</h2>
                 <form onsubmit="event.preventDefault(); app.handleRegister();">
                     <input type="text" id="reg-name" class="auth-input" placeholder="Nombre completo" required maxlength="50">
-                    <input type="text" id="reg-user" class="auth-input" placeholder="Usuario (letras, números, _)" required maxlength="20" pattern="[a-z0-9_]{3,20}">
                     <input type="email" id="reg-email" class="auth-input" placeholder="Correo electrónico" required maxlength="50">
                     <input type="password" id="reg-pass" class="auth-input" placeholder="Contraseña (mín. 8 caracteres)" required minlength="8" maxlength="50" oninput="app.updatePasswordStrength(this.value)">
                     
@@ -2268,64 +2297,59 @@ class App {
 
     async handleRegister() {
         const name = document.getElementById('reg-name').value.trim();
-        const username = document.getElementById('reg-user').value.trim().toLowerCase();
         const email = document.getElementById('reg-email').value.trim();
         const pass = document.getElementById('reg-pass').value;
         const passConfirm = document.getElementById('reg-pass-confirm').value;
         const errDiv = document.getElementById('reg-error');
-
-        // [BLOQUE4] Validación de email con regex
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-            errDiv.textContent = 'Introduce un email válido';
-            return;
-        }
-
-        const userRegex = /^[a-z0-9_]{3,20}$/;
-        if (!userRegex.test(username)) {
-            errDiv.textContent = 'El usuario debe tener entre 3 y 20 caracteres (letras, números y _)';
-            return;
-        }
-
-        if (pass.length < 8) {
-            errDiv.textContent = 'La contraseña debe tener al menos 8 caracteres';
-            return;
-        }
 
         if (pass !== passConfirm) {
             errDiv.textContent = 'Las contraseñas no coinciden';
             return;
         }
 
-        if (this.users[username]) {
-            errDiv.textContent = 'Este nombre de usuario ya está registrado';
-            return;
+        try {
+            const userCredential = await createUserWithEmailAndPassword(this.auth, email, pass);
+            const user = userCredential.user;
+            
+            // Perfil inicial en Firestore
+            this.userProfile = {
+                name: this.escapeHTML(name),
+                email: email,
+                favorites: [],
+                shoppingList: [],
+                stats: { recipesCooked: 0, streak: 0, lastCookedDate: null },
+                createdAt: serverTimestamp()
+            };
+            
+            await setDoc(doc(this.db, "users", user.uid), this.userProfile);
+            this.closeAuthModal();
+            this.showToast(`¡Bienvenido/a, ${name}!`, 'fa-user-check');
+        } catch (error) {
+            errDiv.textContent = 'Error: ' + error.message;
         }
+    }
 
-        // [BLOQUE1] Generación de sal aleatoria
-        const saltArray = crypto.getRandomValues(new Uint8Array(16));
-        const salt = Array.from(saltArray).map(b => b.toString(16).padStart(2, '0')).join('');
-        const hashedPassword = await this.hashPassword(pass, salt);
-        
-        const newUser = {
-            name: this.escapeHTML(name),
-            username,
-            email: this.escapeHTML(email),
-            password: hashedPassword,
-            salt: salt,
-            favorites: [],
-            shoppingList: [],
-            pantry: [],
-            planner: {},
-            createdAt: new Date().toISOString(),
-            avatar: name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
-        };
+    async handleLogin() {
+        const email = document.getElementById('login-email').value.trim();
+        const pass = document.getElementById('login-pass').value;
+        const errDiv = document.getElementById('login-error');
 
-        this.users[username] = newUser;
-        localStorage.setItem('cuchara_users', JSON.stringify(this.users));
-        
-        this.loginUser(newUser);
-        this.showToast(`¡Bienvenido/a, ${newUser.name}!`, 'fa-user-check');
+        try {
+            await signInWithEmailAndPassword(this.auth, email, pass);
+            this.closeAuthModal();
+        } catch (error) {
+            errDiv.textContent = 'Email o contraseña incorrectos';
+        }
+    }
+
+    async logout() {
+        try {
+            await signOut(this.auth);
+            this.showToast('Sesión cerrada correctamente', 'fa-right-from-bracket');
+            this.navigate('home');
+        } catch (error) {
+            this.showToast('Error al cerrar sesión', 'fa-circle-exclamation');
+        }
     }
 
 
@@ -2584,82 +2608,9 @@ class App {
         return `${m}:${s}`;
     }
 
-    async handleLogin() {
-        const username = document.getElementById('login-user').value.trim().toLowerCase();
-        const pass = document.getElementById('login-pass').value;
-        const errDiv = document.getElementById('login-error');
-
-        const user = this.users[username];
-        if (!user) {
-            errDiv.textContent = 'Usuario o contraseña incorrectos';
-            return;
-        }
-
-        // [BLOQUE1] Recuperación de sal para validación
-        const salt = user.salt || 'cuchara_salt_2026';
-        const hashedPassword = await this.hashPassword(pass, salt);
-
-        if (user.password === hashedPassword) {
-            this.loginUser(user);
-            this.showToast(`Hola de nuevo, ${user.name}`, 'fa-hand-wave');
-        } else {
-            errDiv.textContent = 'Usuario o contraseña incorrectos';
-        }
-    }
 
 
 
-    loginUser(user) {
-        this.activeUser = { 
-            username: user.username, 
-            name: user.name, 
-            email: user.email, 
-            avatar: user.avatar,
-            createdAt: user.createdAt
-        };
-        localStorage.setItem('cuchara_active_user', JSON.stringify(this.activeUser));
-        
-        const username = user.username;
-        this.favorites = JSON.parse(localStorage.getItem(`cuchara_favs_${username}`)) || [];
-        this.shoppingList = JSON.parse(localStorage.getItem(`cuchara_shop_${username}`)) || [];
-        this.activePlan = JSON.parse(localStorage.getItem(`cuchara_plan_${username}`)) || null;
-        this.pantry = JSON.parse(localStorage.getItem(`cuchara_pantry_${username}`)) || [];
-        
-        this.closeAuthModal();
-        this.updateShoppingBadge();
-        this.updateUserUI(); // Update header
-        
-        const currentRoute = window.location.hash.replace('#', '').split('/')[0] || 'home';
-        this.navigate(currentRoute);
-    }
-
-    updateUserUI() {
-        const container = document.getElementById('user-dropdown-container');
-        if (!container) return;
-        
-        if (this.activeUser) {
-            const initial = this.activeUser.name.charAt(0).toUpperCase();
-            container.innerHTML = `
-                <div class="user-dropdown">
-                    <div class="user-btn-active" onclick="app.navigate('profile')">
-                        <div class="header-avatar">${initial}</div>
-                        <span class="header-username">${this.activeUser.name}</span>
-                    </div>
-                    <div class="dropdown-content glass-effect">
-                        <a href="#" onclick="app.navigate('profile'); return false;"><i class="fa-solid fa-circle-user"></i> Mi Perfil</a>
-                        <a href="#" onclick="app.navigate('favorites'); return false;"><i class="fa-solid fa-heart"></i> Favoritos</a>
-                        <a href="#" onclick="app.logout(); return false;" style="color:var(--primary-color);"><i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión</a>
-                    </div>
-                </div>
-            `;
-        } else {
-            container.innerHTML = `
-                <button class="header-icon-btn" id="login-nav-btn" onclick="app.showAuthModal('login')" title="Iniciar Sesión">
-                    <i class="fa-solid fa-user"></i>
-                </button>
-            `;
-        }
-    }
 
     // Cooking Mode
 
@@ -2728,22 +2679,13 @@ class App {
         this.showAuthModal('login');
     }
 
-    logout() {
-        this.activeUser = null;
-        this.favorites = [];
-        this.shoppingList = [];
-        this.pantry = [];
-        this.activePlan = null;
-        localStorage.removeItem('cuchara_active_user');
-        this.updateShoppingBadge();
-        this.updateUserUI(); // Update header
+    async logout() {
+        await signOut(this.auth);
         this.showToast('Sesión cerrada correctamente', 'fa-right-from-bracket');
         this.navigate('home');
     }
 
     renderDespensa() {
-        this.pantry = JSON.parse(localStorage.getItem(`cuchara_pantry_${this.activeUser.username}`)) || [];
-        
         const pantryHtml = this.pantry.map((item, idx) => `
             <div class="ingredient-item" style="background:var(--card-bg); padding:1rem; border-radius:var(--radius-md); display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem; box-shadow:var(--shadow-sm);">
                 <span><i class="fa-solid fa-leaf" style="color:var(--primary-color); margin-right:0.5rem;"></i> ${this.escapeHTML(item)}</span>
@@ -2754,37 +2696,31 @@ class App {
         this.contentDiv.innerHTML = `
             <div class="page-container" style="max-width:800px; margin:0 auto;">
                 <h1 style="text-align:center; margin-bottom:1rem;"><i class="fa-solid fa-box-open" style="color:var(--primary-color);"></i> Mi Despensa</h1>
-                <p style="text-align:center; color:var(--text-light); margin-bottom:2rem;">Añade los ingredientes que tienes en casa y descubre qué puedes cocinar hoy mismo sin tener que ir a comprar.</p>
+                <p style="text-align:center; color:var(--text-light); margin-bottom:2rem;">Ingredientes que tienes en casa.</p>
                 
                 <form onsubmit="event.preventDefault(); app.addToPantry(document.getElementById('pantry-input').value);" style="display:flex; gap:1rem; margin-bottom:2rem;">
-                    <input type="text" id="pantry-input" placeholder="Ej. Tomates, pechuga de pollo, arroz..." required style="flex:1; padding:1rem; border:1px solid var(--border-color); border-radius:var(--radius-md); font-family:var(--font-body);">
-                    <button type="submit" class="btn-action" style="background:var(--primary-color); color:white;"><i class="fa-solid fa-plus"></i> Añadir</button>
+                    <input type="text" id="pantry-input" placeholder="Añadir ingrediente..." required style="flex:1; padding:1rem; border-radius:var(--radius-md); border:1px solid var(--border-color);">
+                    <button type="submit" class="btn-action active">Añadir</button>
                 </form>
 
-                <div id="pantry-list" style="margin-bottom:3rem;">
-                    ${this.pantry.length === 0 ? '<p style="text-align:center; color:var(--text-light); font-style:italic;">Tu despensa está vacía.</p>' : pantryHtml}
+                <div id="pantry-list">
+                    ${this.pantry.length === 0 ? '<p style="text-align:center; color:var(--text-light);">Tu despensa está vacía.</p>' : pantryHtml}
                 </div>
-
-                ${this.pantry.length > 0 ? `
-                <div style="text-align:center;">
-                    <button class="btn-action" style="font-size:1.2rem; padding:1rem 2rem; border-radius:30px;" onclick="app.searchByPantry()"><i class="fa-solid fa-wand-magic-sparkles"></i> Ver qué puedo cocinar con esto</button>
-                </div>` : ''}
             </div>
         `;
     }
 
-    addToPantry(item) {
-        if (!item.trim()) return;
+    async addToPantry(item) {
+        if (!item.trim() || !this.activeUser) return;
         this.pantry.push(item.trim());
-        localStorage.setItem(`cuchara_pantry_${this.activeUser.username}`, JSON.stringify(this.pantry));
-        document.getElementById('pantry-input').value = '';
+        await updateDoc(doc(this.db, "users", this.activeUser.uid), { pantry: this.pantry });
         this.renderDespensa();
-        this.showToast('Ingrediente añadido a tu despensa', 'fa-check');
+        this.showToast('Ingrediente añadido', 'fa-check');
     }
 
-    removeFromPantry(index) {
+    async removeFromPantry(index) {
         this.pantry.splice(index, 1);
-        localStorage.setItem(`cuchara_pantry_${this.activeUser.username}`, JSON.stringify(this.pantry));
+        await updateDoc(doc(this.db, "users", this.activeUser.uid), { pantry: this.pantry });
         this.renderDespensa();
     }
 
@@ -2907,21 +2843,21 @@ class App {
         document.body.appendChild(modal);
     }
 
-    updateProfile() {
+    async updateProfile() {
         const newName = document.getElementById('edit-name').value.trim();
         const newEmail = document.getElementById('edit-email').value.trim();
         
-        this.activeUser.name = newName;
-        this.activeUser.email = newEmail;
-        this.users[this.activeUser.username].name = newName;
-        this.users[this.activeUser.username].email = newEmail;
-        
-        localStorage.setItem('cuchara_active_user', JSON.stringify(this.activeUser));
-        localStorage.setItem('cuchara_users', JSON.stringify(this.users));
-        
-        this.showToast('Perfil actualizado', 'fa-user-check');
-        document.querySelector('.modal.active').remove();
-        this.renderProfile();
+        if (this.activeUser) {
+            await updateDoc(doc(this.db, "users", this.activeUser.uid), {
+                name: newName,
+                email: newEmail
+            });
+            this.userProfile.name = newName;
+            this.userProfile.email = newEmail;
+            this.showToast('Perfil actualizado', 'fa-user-check');
+            document.querySelector('.modal.active').remove();
+            this.renderProfile();
+        }
     }
 
     renderEvaluation() {
@@ -3089,11 +3025,12 @@ class App {
         resultDiv.scrollIntoView({ behavior: 'smooth' });
     }
 
-    savePlan(goal, calories) {
-        if (!this.checkAuth()) return;
-        this.activePlan = { goal, calories, date: new Date().toLocaleDateString() };
-        localStorage.setItem('cuchara_plan_' + this.activeUser.username, JSON.stringify(this.activePlan));
-        this.showToast('¡Plan y Objetivo Guardados!', 'fa-bullseye');
+    async savePlan(goal, calories) {
+        if (!this.activeUser) return;
+        const plan = { goal, calories, date: new Date().toLocaleDateString() };
+        await updateDoc(doc(this.db, "users", this.activeUser.uid), { activePlan: plan });
+        this.userProfile.activePlan = plan;
+        this.showToast('¡Plan guardado!', 'fa-bullseye');
         this.navigate('profile');
     }
 
@@ -3420,7 +3357,11 @@ class App {
                 this.userStats.streak++;
                 this.userStats.lastCookedDate = today;
             }
-            localStorage.setItem('cuchara_stats', JSON.stringify(this.userStats));
+            if (this.activeUser) {
+                await updateDoc(doc(this.db, "users", this.activeUser.uid), {
+                    stats: this.userStats
+                });
+            }
             
             this.exitCookingMode();
             this.showToast(`¡Receta completada! Llevas ${this.userStats.recipesCooked} recetas. Racha: ${this.userStats.streak} 🔥`, 'fa-trophy');
@@ -3428,7 +3369,7 @@ class App {
     }
 }
 
-const app = new App();
+window.app = new App();
 
 // Quitar la pantalla de carga global de forma segura
 function removeLoader() {

@@ -1,4 +1,4 @@
-const mockRecipes = [
+export const mockRecipes = [
     {
         id: 'curry-lentejas',
         title: 'Curry Cremoso de Lentejas y Coco',
