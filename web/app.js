@@ -42,9 +42,15 @@ class App {
         this.userStats = { recipesCooked: 0, streak: 0, lastCookedDate: null };
         this.isImperial = false;
         
-        this.init();
         this.listenToAuth();
         this.listenToOpinions();
+        
+        // Wait for DOM to be fully ready before initial render
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.init());
+        } else {
+            this.init();
+        }
     }
 
     listenToAuth() {
@@ -139,14 +145,23 @@ class App {
 
         // Ocultar pantalla de carga
         setTimeout(() => {
-            const loader = document.getElementById('global-loader');
-            if (loader) {
-                loader.classList.add('loader-hidden');
+            try {
+                const loader = document.getElementById('global-loader');
+                if (loader) {
+                    loader.classList.add('loader-hidden');
+                }
+                // Primera carga de ruta
+                const route = window.location.hash.replace('#', '').split('/')[0] || 'home';
+                const params = window.location.hash.replace('#', '').split('/')[1] || null;
+                
+                console.log("Initializing route:", route);
+                this.renderRoute(route, params);
+            } catch (err) {
+                console.error("Initialization error:", err);
+                if (this.contentDiv) {
+                    this.contentDiv.innerHTML = '<div style="text-align:center; padding:5rem;"><h2>Error al cargar la página</h2><p>Por favor, recarga el navegador.</p></div>';
+                }
             }
-            // Primera carga de ruta
-            const route = window.location.hash.replace('#', '').split('/')[0] || 'home';
-            const params = window.location.hash.replace('#', '').split('/')[1];
-            this.renderRoute(route, params);
         }, 800);
     }
 
@@ -3310,7 +3325,14 @@ class App {
     }
 }
 
-window.app = new App();
+// Initialize on DOMContentLoaded to ensure elements like #app-content exist
+document.addEventListener('DOMContentLoaded', () => {
+    try {
+        window.app = new App();
+    } catch (e) {
+        console.error("Critical: App failed to instantiate", e);
+    }
+});
 
 // Quitar la pantalla de carga global de forma segura
 function removeLoader() {
