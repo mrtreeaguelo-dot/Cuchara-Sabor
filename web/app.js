@@ -1452,6 +1452,9 @@ class App {
                     </div>
                     <a href="#" onclick="app.navigate('explore'); return false;" class="reveal-on-scroll" style="color:var(--primary-color); font-weight:700; font-size:1.1rem; display:flex; align-items:center; gap:0.5rem;">Explorar todas <i class="fa-solid fa-chevron-right"></i></a>
                 </div>
+            </section>
+        `;
+    }
 
 
     renderRecipe(id) {
