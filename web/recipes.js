@@ -376,6 +376,13 @@ const cultures = ['Mexicana', 'Japonesa', 'Italiana', 'Española', 'India', 'Tai
 const categories = ['Desayunos', 'Comidas', 'Cenas', 'Snacks', 'Postres'];
 const difficulties = ['Fácil', 'Media', 'Difícil'];
 
+const ingredientsPool = {
+    'Proteínas': ['Pollo', 'Ternera', 'Cerdo', 'Salmón', 'Tofu', 'Garbanzos', 'Lentejas', 'Gambas', 'Huevos'],
+    'Base': ['Arroz', 'Pasta', 'Quinoa', 'Cuscús', 'Patatas', 'Pan', 'Tortillas', 'Harina'],
+    'Vegetales': ['Cebolla', 'Ajo', 'Tomate', 'Espárragos', 'Pimientos', 'Brócoli', 'Espinacas', 'Aguacate'],
+    'Sabor': ['Aceite de oliva', 'Limón', 'Salsa de soja', 'Curry', 'Cilantro', 'Albahaca', 'Queso', 'Miel']
+};
+
 const styles = ['Crujiente', 'Braiseado', 'al Horno', 'Salteado', 'Marinado', 'Especialidad', 'Supremo', 'Exótico', 'Rústico', 'Imperial', 'Zen', 'Vibrante'];
 
 const dessertIngredients = {
