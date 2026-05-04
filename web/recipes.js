@@ -8,6 +8,7 @@ const mockRecipes = [
         difficulty: 'Fácil',
         category: 'Cenas',
         tags: ['Vegano', 'Bajo en calorías', 'Menos de 30 min', 'Alto en proteínas'],
+        macros: { calories: 320, protein: 18, carbs: 45, fats: 12 },
         chefTip: 'Para un sabor más profundo, tuesta las especias en seco un minuto antes de añadir el aceite.',
         allergens: ['Sin Gluten', 'Sin lactosa', 'Sin huevo', 'Sin frutos secos'],
         ingredients: [
@@ -44,6 +45,7 @@ const mockRecipes = [
         difficulty: 'Fácil',
         category: 'Cenas',
         tags: ['Keto', 'Bajo en calorías', 'Alto en proteínas', 'Menos de 30 min'],
+        macros: { calories: 450, protein: 35, carbs: 8, fats: 28 },
         chefTip: 'No cocines demasiado el salmón; debe quedar ligeramente rosado en el centro.',
         allergens: ['Sin Gluten', 'Sin lactosa', 'Sin huevo', 'Sin frutos secos'],
         ingredients: [
@@ -72,8 +74,9 @@ const mockRecipes = [
         image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=600&fit=crop',
         time: '50 min',
         difficulty: 'Media',
-        category: 'Almuerzos',
+        category: 'Comidas',
         tags: ['Japonesa', 'Saludable', 'Pescado'],
+        macros: { calories: 550, protein: 22, carbs: 75, fats: 14 },
         chefTip: 'Usa un cuchillo muy afilado y humedécelo antes de cada corte.',
         allergens: ['Sin lactosa', 'Sin huevo'],
         ingredients: [
@@ -132,7 +135,7 @@ const mockRecipes = [
         image: 'https://images.unsplash.com/photo-1534080564607-c98752441051?w=600&fit=crop',
         time: '60 min',
         difficulty: 'Media',
-        category: 'Almuerzos',
+        category: 'Comidas',
         tags: ['Española', 'Tradicional', 'Arroz'],
         chefTip: 'No remuevas el arroz una vez distribuido para conseguir el "socarrat".',
         allergens: ['Sin Gluten', 'Sin lactosa', 'Sin huevo'],
@@ -194,7 +197,7 @@ const mockRecipes = [
         image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&fit=crop',
         time: '75 min',
         difficulty: 'Media',
-        category: 'Almuerzos',
+        category: 'Comidas',
         tags: ['Griega', 'Tradicional', 'Horno'],
         chefTip: 'Escurre bien las berenjenas con sal para que no suelten agua en el pastel.',
         allergens: ['Sin frutos secos'],
@@ -314,7 +317,7 @@ const mockRecipes = [
         image: 'https://images.unsplash.com/photo-1496116218417-1a781b1c416c?w=600&fit=crop',
         time: '60 min',
         difficulty: 'Difícil',
-        category: 'Almuerzos',
+        category: 'Comidas',
         tags: ['China', 'Al vapor', 'Tradicional'],
         chefTip: 'La masa de Har Gow es muy delicada. Mantén los discos bajo un paño húmedo.',
         allergens: ['Sin lactosa', 'Sin huevo', 'Sin frutos secos'],
@@ -343,7 +346,7 @@ const mockRecipes = [
         image: 'https://images.unsplash.com/photo-1535399831218-d5bd36d1a6b3?w=600&fit=crop',
         time: '20 min',
         difficulty: 'Fácil',
-        category: 'Almuerzos',
+        category: 'Comidas',
         tags: ['Peruana', 'Fresca', 'Pescado'],
         chefTip: 'Usa pescado de máxima frescura. El marinado no debe exceder los 10 minutos.',
         allergens: ['Sin Gluten', 'Sin lactosa', 'Sin huevo', 'Sin frutos secos'],
@@ -370,7 +373,7 @@ const mockRecipes = [
 
 // Generador de recetas dinámicas para completar las 500
 const cultures = ['Mexicana', 'Japonesa', 'Italiana', 'Española', 'India', 'Tailandesa', 'Francesa', 'Griega', 'Marroquí', 'China', 'Peruana', 'Venezolana', 'Americana', 'Libanesa', 'Etíope', 'Turca', 'Coreana', 'Vietnamita'];
-const categories = ['Desayunos', 'Almuerzos', 'Cenas', 'Snacks', 'Postres'];
+const categories = ['Desayunos', 'Comidas', 'Cenas', 'Snacks', 'Postres'];
 const difficulties = ['Fácil', 'Media', 'Difícil'];
 
 const ingredientsPool = {
@@ -396,6 +399,12 @@ for (let i = 1; i <= 488; i++) {
         difficulty: difficulties[i % difficulties.length],
         category: category,
         tags: [culture, category, 'Diversidad'],
+        macros: {
+            calories: 350 + (i % 300),
+            protein: 15 + (i % 25),
+            carbs: 20 + (i % 60),
+            fats: 5 + (i % 20)
+        },
         chefTip: 'Asegúrate de que los ingredientes estén a temperatura ambiente antes de empezar.',
         allergens: ['Sin frutos secos'],
         ingredients: [
