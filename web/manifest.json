@@ -1,0 +1,18 @@
+{
+    "name": "Cuchara & Sabor",
+    "short_name": "CucharaSabor",
+    "description": "Tu asistente de cocina y nutrición personalizado.",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "#FCFAF5",
+    "theme_color": "#D35400",
+    "orientation": "portrait-primary",
+    "icons": [
+        {
+            "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDUxMiA1MTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIHJ4PSI5NiIgZmlsbD0iI0QzNTQwMCIvPjxwYXRoIGQ9Ik0zMzIgMTYwQzMzMiAxNjAgMzAwIDE2MCAyODAgMTkyQzI2MCAyMjQgMjYwIDI4MCAyNjAgMjgwSDM2MEMzNjAgMjgwIDM2MCAyMjQgMzQwIDE5MkMzMjAgMTYwIDMzMiAxNjAgMzMyIDE2MFoiIGZpbGw9IndoaXRlIi8+PHBhdGggZD0iTTE4MCAxNDRMMTQ0IDQ0OEgyMjBMMjU2IDE0NEgxODBaIiBmaWxsPSJ3aGl0ZSIvPjwvc3ZnPg==",
+            "sizes": "512x512",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        }
+    ]
+}

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https://images.unsplash.com https://source.unsplash.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline'">
+    <title>Recetas Fáciles para hacer en casa | Cuchara y Sabor</title>
+    <meta name="description" content="Descubre recetas fáciles, rápidas y deliciosas para hacer en casa. Opciones para todas las dietas y gustos.">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#D35400">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <!-- Performance optimizations -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <!-- Stylesheets -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Outfit:wght@100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
+    <!-- Schema Markup (JSON-LD) will be injected dynamically per recipe -->
+    <script type="application/ld+json" id="schema-markup">
+        {}
+    </script>
+</head>
+<body>
+    <div id="scroll-progress"></div>
+    <div class="noise-overlay"></div>
+
+    <!-- Skip Link for Accessibility -->
+    <a href="#app-content" class="skip-link">Saltar al contenido principal</a>
+
+    <!-- Offline Banner -->
+    <div id="offline-banner" class="offline-banner" style="display:none;">
+        <i class="fa-solid fa-cloud-showers-heavy"></i> Estás trabajando sin conexión. Algunas funciones pueden no estar disponibles.
+    </div>
+
+    <!-- ChefiBot Panel -->
+    <div id="chefibot-modal" class="chefibot-panel glass-effect">
+        <div style="position:absolute; bottom:-40px; left:-40px; opacity:0.1; font-size:12rem; color:var(--primary-color); pointer-events:none; transform:rotate(-15deg);"><i class="fa-solid fa-robot"></i></div>
+        <div class="chefibot-header">
+            <h3 style="margin:0;"><i class="fa-solid fa-robot"></i> ChefiBot <span class="chefibot-badge">AI Assistant</span></h3>
+            <button onclick="app.toggleChefibot()" aria-label="Cerrar ChefiBot"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="chefibot-body" style="position:relative; z-index:5;">
+            <p class="chefibot-intro">¡Hola! Soy tu asistente culinario. ¿Qué ingredientes tienes hoy o qué objetivo buscas?</p>
+            
+            <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:1.5rem;">
+                <button class="tag glass-effect" onclick="document.getElementById('chefi-ing').value='aguacate, tomate'; app.askChefibot()" style="cursor:pointer; border:1px solid var(--primary-color); color:var(--primary-color); font-size:0.75rem;">💡 Sugerencia rápida</button>
+                <button class="tag glass-effect" onclick="app.surpriseMe(); app.toggleChefibot()" style="cursor:pointer; border:1px solid var(--accent-color); color:var(--accent-color); font-size:0.75rem;">🎲 Sorpréndeme</button>
+            </div>
+
+            <div class="filter-group">
+                <label style="font-size:0.75rem; font-weight:800; color:var(--text-light); text-transform:uppercase; margin-bottom:0.4rem; display:block;">Ingredientes (separados por coma)</label>
+                <input type="text" id="chefi-ing" placeholder="ej: pollo, espinacas, arroz..." autocomplete="off">
+            </div>
+            <div class="filter-group" style="margin-top:1rem;">
+                <label style="font-size:0.75rem; font-weight:800; color:var(--text-light); text-transform:uppercase; margin-bottom:0.4rem; display:block;">Tu objetivo nutricional</label>
+                <select id="chefi-goal">
+                    <option value="">Cualquier objetivo</option>
+                    <option value="Perder peso">Definición / Perder Peso</option>
+                    <option value="Ganar peso">Volumen / Ganar Masa</option>
+                    <option value="Para todos">Mantenimiento Saludable</option>
+                </select>
+            </div>
+            <button class="chefibot-submit" onclick="app.askChefibot()">
+                <span>Analizar y Recomendar</span> <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </button>
+            <div id="chefi-result"></div>
+        </div>
+    </div>
+
+    <!-- Cooking Mode Overlay -->
+    <div id="cooking-mode-overlay" class="cooking-mode-overlay cooking-mode-hidden">
+        <div class="cooking-mode-content glass-effect" style="position:relative; overflow:hidden;">
+            <div style="position:absolute; top:-50px; right:-50px; opacity:0.1; font-size:20rem; color:var(--primary-color); pointer-events:none; transform:rotate(20deg);"><i class="fa-solid fa-fire-burner"></i></div>
+            <div style="position:absolute; bottom:-30px; left:-30px; opacity:0.1; font-size:15rem; color:var(--secondary-color); pointer-events:none; transform:rotate(-10deg);"><i class="fa-solid fa-lemon"></i></div>
+            
+            <div id="voice-feedback" class="voice-feedback"><i class="fa-solid fa-microphone"></i> Escuchando... Di "Siguiente"</div>
+
+            <div class="cooking-header">
+                <span id="cooking-step-indicator">Paso 1 de 5</span>
+                <button class="close-cooking" onclick="app.exitCookingMode()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="cooking-content" class="cooking-step-body">
+                <!-- Step content injected by JS -->
+            </div>
+            <div class="cooking-controls">
+                <button onclick="app.prevCookingStep()" id="prev-step-btn"><i class="fa-solid fa-chevron-left"></i> Anterior</button>
+                <div class="cooking-progress-container">
+                    <div id="cooking-progress-bar" class="cooking-progress-bar"></div>
+                </div>
+                <button onclick="app.nextCookingStep()" id="next-step-btn">Siguiente <i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pantalla de Carga -->
+    <div id="global-loader">
+        <div class="loader-content">
+            <div class="loader-logo">
+                <i class="fa-solid fa-utensils"></i>
+            </div>
+            <h2>Cuchara &amp; Sabor</h2>
+            <div class="loader-bar">
+                <div class="loader-bar-fill"></div>
+            </div>
+            <p class="loader-text">Preparando los ingredientes...</p>
+        </div>
+    </div>
+
+    <!-- Back to Top Button -->
+    <button id="back-to-top" class="back-to-top" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" aria-label="Volver arriba">
+        <i class="fa-solid fa-chevron-up"></i>
+    </button>
+
+    <header class="main-header">
+        <div class="header-container">
+            <div class="logo" onclick="app.navigate('home')">
+                <i class="fa-solid fa-utensils"></i>
+                <span>Cuchara <em>&amp;</em> Sabor</span>
+            </div>
+            
+            <nav class="main-nav" id="main-nav">
+                <ul class="nav-list">
+                    <li><a href="#" onclick="app.navigate('home'); return false;" id="nav-home"><i class="fa-solid fa-house"></i> Inicio</a></li>
+                    <li><a href="#" onclick="app.navigate('explore'); return false;" id="nav-explore"><i class="fa-solid fa-compass"></i> Explorar</a></li>
+                    <li><a href="#" onclick="app.navigate('favorites'); return false;" id="nav-favorites"><i class="fa-solid fa-heart"></i> Favoritos</a></li>
+                    <li><a href="#" onclick="app.navigate('planner'); return false;" id="nav-planner"><i class="fa-solid fa-calendar-days"></i> Menú</a></li>
+                    <li><a href="#" onclick="app.navigate('despensa'); return false;" id="nav-despensa"><i class="fa-solid fa-box-open"></i> Despensa</a></li>
+                    <li><a href="#" onclick="app.navigate('evaluacion'); return false;" id="nav-evaluacion"><i class="fa-solid fa-stethoscope"></i> Evaluación</a></li>
+                    <li><a href="#" onclick="app.navigate('profile'); return false;" id="nav-profile"><i class="fa-solid fa-user"></i> Perfil</a></li>
+                </ul>
+            </nav>
+
+            <div class="header-actions">
+                <button class="header-icon-btn" onclick="app.toggleTimerPanel()" title="Temporizadores">
+                    <i class="fa-solid fa-stopwatch"></i>
+                </button>
+                
+                <button class="header-icon-btn" id="shopping-btn" onclick="app.navigate('shopping')" title="Lista de la compra">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    <span class="header-badge" id="shopping-badge" style="display:none;">0</span>
+                </button>
+                
+                <div id="user-dropdown-container" class="user-dropdown-container">
+                    <button class="header-icon-btn" id="login-nav-btn" onclick="app.showAuthModal('login')" title="Iniciar Sesión">
+                        <i class="fa-solid fa-user"></i>
+                    </button>
+                </div>
+
+                <button class="header-icon-btn" id="theme-toggle" title="Cambiar tema" onclick="app.toggleTheme()">
+                    <i class="fa-solid fa-moon"></i>
+                </button>
+                <button class="mobile-menu-btn" onclick="app.toggleMobileMenu()" aria-label="Menú">
+                    <i class="fa-solid fa-bars" id="mobile-menu-icon"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main id="app-content" class="fade-in" role="main" aria-live="polite">
+        <!-- Dynamic content will be injected here -->
+    </main>
+
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content glass-effect" style="position:relative; overflow:hidden;">
+            <div style="position:absolute; top:-20px; right:-20px; opacity:0.1; font-size:10rem; color:var(--primary-color); pointer-events:none;"><i class="fa-solid fa-cookie-bite"></i></div>
+            <button class="close-modal" onclick="app.closeAuthModal()" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <div id="auth-form-container">
+                <!-- Auth form injected by JS -->
+            </div>
+        </div>
+    </div>
+
+    <footer class="main-footer">
+        <div class="footer-wave">
+            <svg viewBox="0 0 1440 120" preserveAspectRatio="none">
+                <path d="M0,40 C360,120 720,0 1080,80 C1260,100 1380,60 1440,40 L1440,120 L0,120 Z" fill="currentColor"/>
+            </svg>
+        </div>
+        <div class="footer-content">
+            <div class="footer-container">
+                <div class="footer-column">
+                    <div class="footer-logo">
+                        <i class="fa-solid fa-utensils"></i> Cuchara &amp; Sabor
+                    </div>
+                    <p>Nuestra pasión es llevar la cocina casera, saludable y accesible a todos los hogares.</p>
+                    <div class="social-links">
+                        <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                        <a href="#" aria-label="Pinterest"><i class="fa-brands fa-pinterest"></i></a>
+                        <a href="#" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+                        <a href="#" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+                    </div>
+                </div>
+                <div class="footer-column">
+                    <h3>Secciones</h3>
+                    <ul>
+                        <li><a href="#" onclick="app.navigate('explore'); return false;">Explorar Recetas</a></li>
+                        <li><a href="#" onclick="app.navigate('planner'); return false;">Plan Nutricional</a></li>
+                        <li><a href="#" onclick="app.navigate('evaluacion'); return false;">Evaluación Física</a></li>
+                        <li><a href="#" onclick="app.navigate('despensa'); return false;">Mi Despensa</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h3>Legal</h3>
+                    <ul>
+                        <li><a href="#">Política de Privacidad</a></li>
+                        <li><a href="#">Política de Cookies</a></li>
+                        <li><a href="#">Términos de Servicio</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h3>Newsletter</h3>
+                    <p>Recibe las mejores recetas semanales en tu correo.</p>
+                    <form class="newsletter-form" onsubmit="event.preventDefault(); app.showToast('¡Gracias por suscribirte! 🎉', 'fa-envelope');">
+                        <input type="email" placeholder="Tu correo electrónico" required>
+                        <button type="submit"><i class="fa-solid fa-paper-plane"></i></button>
+                    </form>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Cuchara &amp; Sabor. Todos los derechos reservados. Hecho con <i class="fa-solid fa-heart" style="color:var(--primary-color);"></i></p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Floating Action Button for ChefiBot -->
+    <button class="fab-chefibot" onclick="app.toggleChefibot()" aria-label="Abrir ChefiBot" title="Preguntar a ChefiBot">
+        <i class="fa-solid fa-robot"></i>
+        <span class="fab-pulse"></span>
+    </button>
+
+    <script src="recipes.js" defer></script>
+    <script src="app.js?v=3" defer></script>
+    <script>
+        // Safety Fallback for Loader
+        setTimeout(function() {
+            var loader = document.getElementById('global-loader');
+            if (loader && loader.style.display !== 'none') {
+                loader.style.opacity = '0';
+                setTimeout(function() { loader.style.display = 'none'; }, 600);
+            }
+        }, 2500);
+    </script>
+</body>
+</html>
