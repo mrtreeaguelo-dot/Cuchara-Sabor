@@ -6,8 +6,8 @@ const mockRecipes = [
         image: 'https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?w=600&fit=crop',
         time: '25 min',
         difficulty: 'Fácil',
-        category: 'Cenas',
-        tags: ['Vegano', 'Bajo en calorías', 'Menos de 30 min', 'Alto en proteínas'],
+        category: 'Comidas',
+        tags: ['Vegano', 'Saludable', 'Legumbres', 'Alto en proteínas'],
         macros: { calories: 320, protein: 18, carbs: 45, fats: 12 },
         chefTip: 'Para un sabor más profundo, tuesta las especias en seco un minuto antes de añadir el aceite.',
         allergens: ['Sin Gluten', 'Sin lactosa', 'Sin huevo', 'Sin frutos secos'],
@@ -105,7 +105,7 @@ const mockRecipes = [
         image: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=600&fit=crop',
         time: '4 h',
         difficulty: 'Difícil',
-        category: 'Cenas',
+        category: 'Comidas',
         tags: ['Japonesa', 'Tradicional', 'Sopa'],
         chefTip: 'El secreto está en el "tare" (la base de sabor). No escatimes en la calidad de la soja.',
         allergens: ['Sin lactosa', 'Sin frutos secos'],
@@ -167,7 +167,7 @@ const mockRecipes = [
         image: 'https://images.unsplash.com/photo-1551504734-5ee1c4a1479b?w=600&fit=crop',
         time: '40 min',
         difficulty: 'Media',
-        category: 'Cenas',
+        category: 'Comidas',
         tags: ['Mexicana', 'Tradicional', 'Picante'],
         chefTip: 'La piña asada es fundamental para equilibrar el adobo de la carne.',
         allergens: ['Sin lactosa', 'Sin huevo'],
@@ -376,53 +376,97 @@ const cultures = ['Mexicana', 'Japonesa', 'Italiana', 'Española', 'India', 'Tai
 const categories = ['Desayunos', 'Comidas', 'Cenas', 'Snacks', 'Postres'];
 const difficulties = ['Fácil', 'Media', 'Difícil'];
 
-const ingredientsPool = {
-    'Proteínas': ['Pollo', 'Ternera', 'Cerdo', 'Salmón', 'Tofu', 'Garbanzos', 'Lentejas', 'Gambas', 'Huevos'],
-    'Base': ['Arroz', 'Pasta', 'Quinoa', 'Cuscús', 'Patatas', 'Pan', 'Tortillas', 'Harina'],
-    'Vegetales': ['Cebolla', 'Ajo', 'Tomate', 'Espárragos', 'Pimientos', 'Brócoli', 'Espinacas', 'Aguacate'],
-    'Sabor': ['Aceite de oliva', 'Limón', 'Salsa de soja', 'Curry', 'Cilantro', 'Albahaca', 'Queso', 'Miel']
+const styles = ['Crujiente', 'Braiseado', 'al Horno', 'Salteado', 'Marinado', 'Especialidad', 'Supremo', 'Exótico', 'Rústico', 'Imperial', 'Zen', 'Vibrante'];
+
+const dessertIngredients = {
+    'Bases': ['Chocolate', 'Yogur', 'Avena', 'Frutas del Bosque', 'Manzana', 'Plátano', 'Mascarpone', 'Hojaldre'],
+    'Toppings': ['Miel', 'Canela', 'Vainilla', 'Nueces', 'Almendras', 'Cacao', 'Sirope de Arce', 'Menta']
+};
+
+const snackIngredients = {
+    'Bases': ['Garbanzos', 'Frutos Secos', 'Queso', 'Maíz', 'Edamame', 'Zanahoria', 'Pepino', 'Nachos'],
+    'Dips': ['Hummus', 'Guacamole', 'Tzatziki', 'Salsa Picante', 'Crema de Queso']
 };
 
 for (let i = 1; i <= 488; i++) {
     const culture = cultures[i % cultures.length];
-    const category = categories[i % categories.length];
-    const id = `recipe-${i}`;
-    const prot = ingredientsPool['Proteínas'][i % ingredientsPool['Proteínas'].length];
-    const base = ingredientsPool['Base'][i % ingredientsPool['Base'].length];
+    const style = styles[i % styles.length];
+    const difficulty = difficulties[i % difficulties.length];
+    let category = 'Comidas';
+    
+    // Asignación de categoría primero
+    if (i % 8 === 0) category = 'Desayunos';
+    else if (i % 11 === 0) category = 'Postres';
+    else if (i % 14 === 0) category = 'Snacks';
+    else if (i % 3 === 0) category = 'Cenas';
+
+    let title, description, ingredients, prot, base, flavor;
+
+    if (category === 'Postres') {
+        base = dessertIngredients['Bases'][i % dessertIngredients['Bases'].length];
+        flavor = dessertIngredients['Toppings'][i % dessertIngredients['Toppings'].length];
+        title = `${style} de ${base} con ${flavor} ${culture}`;
+        description = `Un postre delicado que combina la textura de ${base.toLowerCase()} con el aroma de ${flavor.toLowerCase()}, ideal para cerrar una comida ${culture.toLowerCase()}.`;
+        ingredients = [`200g de ${base}`, `${flavor} para decorar`, 'Azúcar moreno o Stevia', 'Esencia artesanal'];
+    } else if (category === 'Desayunos') {
+        prot = (i % 2 === 0) ? 'Huevos' : 'Avena';
+        base = (i % 2 === 0) ? 'Pan Integral' : 'Leche de Almendras';
+        title = `Desayuno ${culture}: ${prot} con ${base}`;
+        description = `Empieza el día con energía gracias a esta receta de ${prot.toLowerCase()} preparada al estilo ${culture.toLowerCase()}.`;
+        ingredients = [`Ración de ${prot}`, `${base} de calidad`, 'Fruta fresca', 'Semillas de chía'];
+    } else if (category === 'Snacks') {
+        base = snackIngredients['Bases'][i % snackIngredients['Bases'].length];
+        flavor = snackIngredients['Dips'][i % snackIngredients['Dips'].length];
+        title = `Bocado de ${base} con ${flavor} ${culture}`;
+        description = `Un snack saludable y rápido: ${base.toLowerCase()} acompañado de un toque de ${flavor.toLowerCase()}.`;
+        ingredients = [`100g de ${base}`, `${flavor} para dipear`, 'Sal y especias ligeras'];
+    } else {
+        // Comidas y Cenas (Salados)
+        prot = ingredientsPool['Proteínas'][i % ingredientsPool['Proteínas'].length];
+        // Evitar huevos en cenas/comidas generadas para mayor variedad
+        if (prot === 'Huevos') prot = 'Pollo'; 
+        base = ingredientsPool['Base'][i % ingredientsPool['Base'].length];
+        flavor = ingredientsPool['Sabor'][i % ingredientsPool['Sabor'].length];
+        
+        const titlePatterns = [
+            `${prot} ${style} con ${base} al estilo ${culture}`,
+            `Delicia ${culture} de ${base} y ${prot}`,
+            `Secreto de ${culture}: ${prot} con Toque de ${flavor}`,
+            `${prot} Marinado sobre Cama de ${base} ${culture}`
+        ];
+        title = titlePatterns[i % titlePatterns.length];
+        description = `Una creación culinaria que destaca por el ${prot.toLowerCase()} preparado con la técnica ${style.toLowerCase()}, fusionando sabores de la cocina ${culture.toLowerCase()}.`;
+        ingredients = [`250g de ${prot}`, `150g de ${base}`, `${flavor} de primera calidad`, 'Especias del chef'];
+    }
     
     mockRecipes.push({
-        id: id,
-        title: `${prot} con ${base} al estilo ${culture}`,
-        description: `Una deliciosa combinación de ${prot.toLowerCase()} preparada siguiendo las tradiciones de la cocina ${culture.toLowerCase()}.`,
-        image: `https://images.unsplash.com/photo-${1500000000000 + i}?w=600&fit=crop&q=60`,
-        time: `${15 + (i % 45)} min`,
-        difficulty: difficulties[i % difficulties.length],
+        id: `recipe-${i}`,
+        title: title,
+        description: description,
+        image: `https://images.unsplash.com/photo-${1500000000000 + (i * 123) % 100000}?w=600&fit=crop&q=60`,
+        time: (category === 'Postres' || category === 'Snacks') ? `${10 + (i % 20)} min` : `${20 + (i % 40)} min`,
+        difficulty: difficulty,
         category: category,
-        tags: [culture, category, 'Diversidad'],
+        tags: [culture, category, style, 'Gourmet'],
         macros: {
-            calories: 350 + (i % 300),
-            protein: 15 + (i % 25),
-            carbs: 20 + (i % 60),
+            calories: (category === 'Postres' || category === 'Snacks') ? 150 + (i % 200) : 350 + (i % 400),
+            protein: (category === 'Postres') ? 2 + (i % 10) : 20 + (i % 30),
+            carbs: (category === 'Postres') ? 30 + (i % 40) : 20 + (i % 50),
             fats: 5 + (i % 20)
         },
-        chefTip: 'Asegúrate de que los ingredientes estén a temperatura ambiente antes de empezar.',
+        chefTip: `En esta receta de ${category.toLowerCase()}, el secreto es la frescura de los ingredientes principales.`,
         allergens: ['Sin frutos secos'],
-        ingredients: [
-            `200g de ${prot}`,
-            `150g de ${base}`,
-            'Especias seleccionadas',
-            'Aceite y sal'
-        ],
+        ingredients: ingredients,
         adaptation: {
-            title: 'Opción Vegetariana',
-            text: 'Simplemente cambia la proteína animal por tofu o legumbres.'
+            title: 'Tip de Salud',
+            text: 'Puedes reducir las calorías sustituyendo el azúcar por edulcorante o el aceite por spray.'
         },
         steps: [
-            { text: `Prepara el ${base.toLowerCase()} según las instrucciones del paquete.`, image: null },
-            { text: `Cocina el ${prot.toLowerCase()} en una sartén con especias.`, image: null },
-            { text: 'Junta todos los elementos y sirve caliente.', image: null }
+            { text: `Prepara los ingredientes principales de tu ${title.toLowerCase()}.`, image: null },
+            { text: `Cocina siguiendo el estilo ${style.toLowerCase()} tradicional.`, image: null },
+            { text: 'Sirve inmediatamente y disfruta.', image: null }
         ],
-        finalResult: 'Un plato equilibrado y lleno de matices culturales.',
-        seoSchema: { "@context": "https://schema.org/", "@type": "Recipe", "name": `Receta Diversa ${i}` }
+        finalResult: 'Un resultado equilibrado y apetitoso.',
+        seoSchema: { "@context": "https://schema.org/", "@type": "Recipe", "name": title }
     });
 }

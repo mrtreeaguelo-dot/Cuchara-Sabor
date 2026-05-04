@@ -1049,12 +1049,20 @@ class App {
                     <div class="sidebar-decor" style="position:absolute; top:20px; left:20px; opacity:0.1; font-size:3rem; pointer-events:none; transform:rotate(-45deg);"><i class="fa-solid fa-leaf"></i></div>
                 </aside>
 
-                <div class="recipes-content">
-                    <h2 class="section-title" style="text-align: left;">Explorar Recetas</h2>
-                    <div class="recipes-grid" id="explore-grid">
-                        <!-- Rendered by updateExploreGrid() -->
+                    <div class="recipes-content">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem; flex-wrap:wrap; gap:1rem;">
+                            <h2 class="section-title" style="text-align: left; margin:0;">Descubrir Recetas</h2>
+                            <div id="active-filters-list" style="display:flex; gap:0.5rem; flex-wrap:wrap;"></div>
+                        </div>
+                        <div class="recipes-grid" id="explore-grid">
+                            <!-- Rendered by updateExploreGrid() -->
+                        </div>
+                        <div id="load-more-container" style="text-align:center; margin-top:4rem; margin-bottom:2rem;">
+                            <button class="btn-action" onclick="app.loadMoreRecipes()" id="load-more-btn" style="padding:1rem 3rem;">
+                                <i class="fa-solid fa-plus"></i> Cargar más recetas
+                            </button>
+                        </div>
                     </div>
-                </div>
             </div>
         `;
         
@@ -1063,7 +1071,13 @@ class App {
 
     clearFilters() {
         this.activeFilters = { category: [], time: [], diet: [], allergen: [], searchQuery: '', goal: [], sort: 'default' };
+        this.recipesToShow = 12;
         this.renderExplore();
+    }
+
+    loadMoreRecipes() {
+        this.recipesToShow += 12;
+        this.updateExploreGrid();
     }
 
     toggleFilter(category, value) {
@@ -1139,24 +1153,80 @@ class App {
         if (this.activeFilters.sort === 'calories-low') {
             filtered.sort((a, b) => (a.macros?.calories || 0) - (b.macros?.calories || 0));
         } else if (this.activeFilters.sort === 'time-low') {
-            const parseTime = t => parseInt(t.match(/\d+/)[0]);
+            const parseTime = t => parseInt(t.match(/\d+/)[0] || 30);
             filtered.sort((a, b) => parseTime(a.time) - parseTime(b.time));
         } else if (this.activeFilters.sort === 'protein-high') {
             filtered.sort((a, b) => (b.macros?.protein || 0) - (a.macros?.protein || 0));
         }
+
+        // Update Filter Tags UI
+        this.renderFilterTags();
 
         if (filtered.length === 0) {
             grid.innerHTML = `
                 <div class="reveal-on-scroll" style="grid-column: 1/-1; text-align: center; padding: 5rem 2rem;">
                     <i class="fa-solid fa-magnifying-glass" style="font-size: 4rem; color: var(--border-color); margin-bottom: 2rem; display: block;"></i>
                     <h3 style="font-size: 2rem; margin-bottom: 1rem;">No hemos encontrado recetas</h3>
-                    <p style="color: var(--text-light); font-size: 1.1rem; margin-bottom: 2rem;">Prueba a cambiar los filtros o el término de búsqueda para encontrar lo que buscas.</p>
-                    <button class="btn-action active" onclick="app.activeFilters = { category: [], time: [], diet: [], allergen: [], searchQuery: '', goal: [] }; app.updateExploreGrid();" style="margin: 0 auto; padding: 1rem 3rem;">Limpiar todos los filtros</button>
+                    <p style="color: var(--text-light); font-size: 1.1rem; margin-bottom: 2rem;">Prueba a cambiar los filtros o el término de búsqueda.</p>
+                    <button class="btn-action active" onclick="app.clearFilters()" style="margin: 0 auto; padding: 1rem 3rem;">Limpiar filtros</button>
                 </div>
             `;
-        } else {
-            grid.innerHTML = filtered.map((recipe, index) => this.createRecipeCard(recipe, index)).join('');
+            const loadMoreBtn = document.getElementById('load-more-btn');
+            if (loadMoreBtn) loadMoreBtn.style.display = 'none';
+            return;
         }
+
+        const displayList = filtered.slice(0, this.recipesToShow);
+        grid.innerHTML = displayList.map((recipe, index) => this.createRecipeCard(recipe, index)).join('');
+
+        const loadMoreBtn = document.getElementById('load-more-btn');
+        if (loadMoreBtn) {
+            loadMoreBtn.style.display = filtered.length > this.recipesToShow ? 'inline-block' : 'none';
+        }
+    }
+
+    renderFilterTags() {
+        const container = document.getElementById('active-filters-list');
+        if (!container) return;
+        
+        let tagsHtml = '';
+        const sortNames = { 'calories-low': 'Menos Calorías', 'time-low': 'Más Rápidas', 'protein-high': 'Más Proteína' };
+
+        Object.entries(this.activeFilters).forEach(([key, values]) => {
+            if (key === 'searchQuery' && values) {
+                tagsHtml += this.createTagHtml('Búsqueda', values, 'searchQuery');
+            } else if (key === 'sort' && values !== 'default') {
+                tagsHtml += this.createTagHtml('Orden', sortNames[values], 'sort');
+            } else if (Array.isArray(values)) {
+                values.forEach(v => tagsHtml += this.createTagHtml(key, v, key));
+            }
+        });
+
+        container.innerHTML = tagsHtml;
+    }
+
+    createTagHtml(type, value, key) {
+        return `
+            <div class="filter-tag" style="background:var(--primary-color); color:white; padding:0.4rem 0.8rem; border-radius:20px; font-size:0.8rem; display:flex; align-items:center; gap:0.5rem; animation:fadeIn 0.3s ease; box-shadow:var(--shadow-sm);">
+                <span>${value}</span>
+                <i class="fa-solid fa-xmark" style="cursor:pointer; opacity:0.8;" onclick="app.removeSpecificFilter('${key}', '${value}')"></i>
+            </div>
+        `;
+    }
+
+    removeSpecificFilter(key, value) {
+        if (key === 'searchQuery') {
+            this.activeFilters[key] = '';
+            const input = document.getElementById('explore-search') || document.getElementById('home-search');
+            if (input) input.value = '';
+        } else if (key === 'sort') {
+            this.activeFilters[key] = 'default';
+        } else {
+            this.activeFilters[key] = this.activeFilters[key].filter(v => v !== value);
+        }
+        this.recipesToShow = 12;
+        this.updateExploreGrid();
+    }
     }
 
     renderIngredientLabel(label) {
