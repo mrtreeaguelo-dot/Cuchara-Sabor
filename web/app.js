@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, query, where, getDocs, onSnapshot, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { mockRecipes } from "./recipes.js";
 
@@ -190,19 +190,21 @@ class App {
             document.body.appendChild(blob);
         }
 
-        for (let i = 0; i < 40; i++) {
+        for (let i = 0; i < 60; i++) {
             const posX = Math.random() * 100;
             const posY = Math.random() * 100;
-            const size = Math.random() * (2.2 - 1.2) + 1.2; // random size 1.2rem to 2.2rem
-            const blur = Math.random() > 0.7 ? (Math.random() * 2) : 0; // Some have a slight blur for depth
-            const duration = 15 + Math.random() * 25; // Variable speed 15s to 40s
+            const size = Math.random() * (2.5 - 1.0) + 1.0; 
+            const blur = Math.random() > 0.8 ? (Math.random() * 3) : 0;
+            const duration = 20 + Math.random() * 30;
+            const rotation = Math.random() * 360;
             
             const icon = document.createElement('i');
             icon.className = `fa-solid ${icons[Math.floor(Math.random() * icons.length)]} bg-ingredient`;
             icon.style.left = `${posX}%`;
             icon.style.top = `${posY}%`;
-            icon.style.setProperty('--drift-x', `${(Math.random() - 0.5) * 300}px`);
-            icon.style.setProperty('--drift-y', `${(Math.random() - 0.5) * 300}px`);
+            icon.style.transform = `rotate(${rotation}deg)`;
+            icon.style.setProperty('--drift-x', `${(Math.random() - 0.5) * 400}px`);
+            icon.style.setProperty('--drift-y', `${(Math.random() - 0.5) * 400}px`);
             icon.style.setProperty('--size', `${size}rem`);
             icon.style.setProperty('--blur', `${blur}px`);
             icon.style.setProperty('--duration', `${duration}s`);
@@ -944,17 +946,18 @@ class App {
     renderExplore() {
         this.contentDiv.innerHTML = `
             <div class="explore-layout">
-                <aside class="filters-sidebar">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
-                        <h3 style="margin:0;">Filtros</h3>
-                        <button onclick="app.clearFilters()" style="background:none; border:none; color:var(--primary-color); cursor:pointer; font-size:0.85rem; font-weight:600;"><i class="fa-solid fa-filter-circle-xmark"></i> Limpiar</button>
+
+                <aside class="filters-sidebar glass-card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem;">
+                        <h3 style="margin:0; font-family:var(--font-heading);">Filtros</h3>
+                        <button class="btn-action" onclick="app.clearFilters()" style="padding:0.4rem 0.8rem; font-size:0.8rem;"><i class="fa-solid fa-rotate"></i> Reset</button>
                     </div>
-                    
+
                     <div class="filter-group">
                         <label style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.8rem; font-weight:700; color:var(--primary-color);">
                             <i class="fa-solid fa-arrow-down-wide-short"></i> Ordenar por
                         </label>
-                        <div class="custom-select-wrapper">
+                        <div class="custom-select-wrapper" style="position:relative;">
                             <select onchange="app.activeFilters.sort = this.value; app.updateExploreGrid();" style="width:100%; padding:0.9rem; border-radius:var(--radius-md); border:1px solid var(--border-color); background:var(--card-bg); font-family:var(--font-body); cursor:pointer; appearance:none; box-shadow:var(--shadow-sm);">
                                 <option value="default">✨ Relevancia</option>
                                 <option value="calories-low">🥗 Menos Calorías</option>
@@ -1069,97 +1072,134 @@ class App {
         const grid = document.getElementById('explore-grid');
         if (!grid) return;
 
-        let filtered = mockRecipes.filter(recipe => {
-            // Search Query filter (Multi-word support for pantry/search)
-            if (this.activeFilters.searchQuery) {
-                const q = this.activeFilters.searchQuery.toLowerCase();
-                
-                // ChefiBot Intent Logic: Map natural language to tags
-                const intents = {
-                    'ligero': ['Bajo en calorías', 'Saludable', 'Vegano'],
-                    'perder peso': ['Bajo en calorías', 'Perder peso'],
-                    'gym': ['Alto en proteínas', 'Ganar peso'],
-                    'músculo': ['Alto en proteínas', 'Ganar peso'],
-                    'rápido': ['Menos de 15 min', 'Menos de 30 min'],
-                    'facil': ['Fácil'],
-                    'sano': ['Saludable', 'Vegano'],
-                    'cena': ['Cenas'],
-                    'comida': ['Comidas'],
-                    'desayuno': ['Desayunos']
-                };
+        // [SKELETON] Show skeletons briefly for premium feel
+        grid.innerHTML = Array(6).fill(0).map(() => `
+            <div class="skeleton-card">
+                <div class="skeleton-img skeleton"></div>
+                <div class="skeleton-line skeleton"></div>
+                <div class="skeleton-line skeleton short"></div>
+            </div>
+        `).join('');
 
-                // Check if query matches an intent
-                let intentMatch = false;
-                for (const [key, tags] of Object.entries(intents)) {
-                    if (q.includes(key)) {
-                        if (recipe.tags.some(t => tags.includes(t)) || tags.includes(recipe.category)) {
-                            intentMatch = true;
-                            break;
+        setTimeout(() => {
+            let filtered = mockRecipes.filter(recipe => {
+                // Search Query filter (Multi-word support for pantry/search)
+                if (this.activeFilters.searchQuery) {
+                    const q = this.activeFilters.searchQuery.toLowerCase();
+                    
+                    // ChefiBot Intent Logic: Map natural language to tags
+                    const intents = {
+                        'ligero': ['Bajo en calorías', 'Saludable', 'Vegano'],
+                        'perder peso': ['Bajo en calorías', 'Perder peso'],
+                        'gym': ['Alto en proteínas', 'Ganar peso'],
+                        'músculo': ['Alto en proteínas', 'Ganar peso'],
+                        'rápido': ['Menos de 15 min', 'Menos de 30 min'],
+                        'facil': ['Fácil'],
+                        'sano': ['Saludable', 'Vegano'],
+                        'cena': ['Cenas'],
+                        'comida': ['Comidas'],
+                        'desayuno': ['Desayunos']
+                    };
+
+                    // Check if query matches an intent
+                    let intentMatch = false;
+                    for (const [key, tags] of Object.entries(intents)) {
+                        if (q.includes(key)) {
+                            if (recipe.tags.some(t => tags.includes(t)) || tags.includes(recipe.category)) {
+                                intentMatch = true;
+                                break;
+                            }
                         }
                     }
+
+                    const matchTitle = recipe.title.toLowerCase().includes(q);
+                    const matchIngredient = recipe.ingredients.some(ing => ing.toLowerCase().includes(q));
+                    const matchCategory = recipe.category.toLowerCase().includes(q);
+                    
+                    if (!matchTitle && !matchIngredient && !matchCategory && !intentMatch) return false;
                 }
+                // Category filter
+                if (this.activeFilters.category.length > 0) {
+                    if (!this.activeFilters.category.includes(recipe.category)) return false;
+                }
+                // Time filter
+                if (this.activeFilters.time.length > 0) {
+                    if (!this.activeFilters.time.some(t => recipe.tags.includes(t))) return false;
+                }
+                // Diet filter
+                if (this.activeFilters.diet.length > 0) {
+                    if (!this.activeFilters.diet.some(d => recipe.tags.includes(d))) return false;
+                }
+                // Goal filter
+                if (this.activeFilters.goal.length > 0) {
+                    if (!this.activeFilters.goal.some(g => recipe.tags.includes(g))) return false;
+                }
+                return true;
+            });
 
-                const matchTitle = recipe.title.toLowerCase().includes(q);
-                const matchIngredient = recipe.ingredients.some(ing => ing.toLowerCase().includes(q));
-                const matchCategory = recipe.category.toLowerCase().includes(q);
-                
-                if (!matchTitle && !matchIngredient && !matchCategory && !intentMatch) return false;
+            // Sorting Logic
+            if (this.activeFilters.sort === 'calories-low') {
+                filtered.sort((a, b) => (a.macros?.calories || 0) - (b.macros?.calories || 0));
+            } else if (this.activeFilters.sort === 'time-low') {
+                const parseTime = t => parseInt(String(t).match(/\d+/)?.[0] || 30);
+                filtered.sort((a, b) => parseTime(a.time) - parseTime(b.time));
+            } else if (this.activeFilters.sort === 'protein-high') {
+                filtered.sort((a, b) => (b.macros?.protein || 0) - (a.macros?.protein || 0));
+            } else if (this.activeFilters.sort === 'difficulty-easy') {
+                const diffMap = { 'Fácil': 1, 'Media': 2, 'Difícil': 3 };
+                filtered.sort((a, b) => (diffMap[a.difficulty] || 2) - (diffMap[b.difficulty] || 2));
             }
-            // Category filter
-            if (this.activeFilters.category.length > 0) {
-                if (!this.activeFilters.category.includes(recipe.category)) return false;
-            }
-            // Time filter
-            if (this.activeFilters.time.length > 0) {
-                if (!this.activeFilters.time.some(t => recipe.tags.includes(t))) return false;
-            }
-            // Diet filter
-            if (this.activeFilters.diet.length > 0) {
-                if (!this.activeFilters.diet.some(d => recipe.tags.includes(d))) return false;
-            }
-            // Goal filter
-            if (this.activeFilters.goal.length > 0) {
-                if (!this.activeFilters.goal.some(g => recipe.tags.includes(g))) return false;
-            }
-            return true;
-        });
 
-        // Sorting Logic
-        if (this.activeFilters.sort === 'calories-low') {
-            filtered.sort((a, b) => (a.macros?.calories || 0) - (b.macros?.calories || 0));
-        } else if (this.activeFilters.sort === 'time-low') {
-            const parseTime = t => parseInt(String(t).match(/\d+/)?.[0] || 30);
-            filtered.sort((a, b) => parseTime(a.time) - parseTime(b.time));
-        } else if (this.activeFilters.sort === 'protein-high') {
-            filtered.sort((a, b) => (b.macros?.protein || 0) - (a.macros?.protein || 0));
-        } else if (this.activeFilters.sort === 'difficulty-easy') {
-            const diffMap = { 'Fácil': 1, 'Media': 2, 'Difícil': 3 };
-            filtered.sort((a, b) => (diffMap[a.difficulty] || 2) - (diffMap[b.difficulty] || 2));
-        }
+            // Update Filter Tags UI
+            this.renderFilterTags();
 
-        // Update Filter Tags UI
-        this.renderFilterTags();
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div class="reveal-on-scroll" style="grid-column: 1/-1; text-align: center; padding: 5rem 2rem;">
+                        <i class="fa-solid fa-magnifying-glass" style="font-size: 4rem; color: var(--border-color); margin-bottom: 2rem; display: block;"></i>
+                        <h3 style="font-size: 2rem; margin-bottom: 1rem;">No hemos encontrado recetas</h3>
+                        <p style="color: var(--text-light); font-size: 1.1rem; margin-bottom: 2rem;">Prueba a cambiar los filtros o el término de búsqueda.</p>
+                        <button class="btn-action active" onclick="app.clearFilters()" style="margin: 0 auto; padding: 1rem 3rem;">Limpiar filtros</button>
+                    </div>
+                `;
+                const loadMoreBtn = document.getElementById('load-more-btn');
+                if (loadMoreBtn) loadMoreBtn.style.display = 'none';
+                return;
+            }
 
-        if (filtered.length === 0) {
-            grid.innerHTML = `
-                <div class="reveal-on-scroll" style="grid-column: 1/-1; text-align: center; padding: 5rem 2rem;">
-                    <i class="fa-solid fa-magnifying-glass" style="font-size: 4rem; color: var(--border-color); margin-bottom: 2rem; display: block;"></i>
-                    <h3 style="font-size: 2rem; margin-bottom: 1rem;">No hemos encontrado recetas</h3>
-                    <p style="color: var(--text-light); font-size: 1.1rem; margin-bottom: 2rem;">Prueba a cambiar los filtros o el término de búsqueda.</p>
-                    <button class="btn-action active" onclick="app.clearFilters()" style="margin: 0 auto; padding: 1rem 3rem;">Limpiar filtros</button>
-                </div>
-            `;
+            const displayList = filtered.slice(0, this.recipesToShow);
+            grid.innerHTML = displayList.map((recipe, index) => this.createRecipeCard(recipe, index)).join('');
+
             const loadMoreBtn = document.getElementById('load-more-btn');
-            if (loadMoreBtn) loadMoreBtn.style.display = 'none';
-            return;
-        }
+            if (loadMoreBtn) {
+                loadMoreBtn.style.display = filtered.length > this.recipesToShow ? 'inline-block' : 'none';
+            }
+        }, 400); 
+    }
 
-        const displayList = filtered.slice(0, this.recipesToShow);
-        grid.innerHTML = displayList.map((recipe, index) => this.createRecipeCard(recipe, index)).join('');
+    launchConfetti() {
+        for (let i = 0; i < 50; i++) {
+            const confetti = document.createElement('div');
+            confetti.style.position = 'fixed';
+            confetti.style.width = '10px';
+            confetti.style.height = '10px';
+            confetti.style.backgroundColor = ['#d35400', '#f1c40f', '#2ecc71', '#3498db', '#e74c3c'][Math.floor(Math.random() * 5)];
+            confetti.style.left = Math.random() * 100 + 'vw';
+            confetti.style.top = '-10px';
+            confetti.style.zIndex = '10001';
+            confetti.style.borderRadius = '2px';
+            confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+            document.body.appendChild(confetti);
 
-        const loadMoreBtn = document.getElementById('load-more-btn');
-        if (loadMoreBtn) {
-            loadMoreBtn.style.display = filtered.length > this.recipesToShow ? 'inline-block' : 'none';
+            const animation = confetti.animate([
+                { transform: `translate3d(0, 0, 0) rotate(0deg)`, opacity: 1 },
+                { transform: `translate3d(${(Math.random() - 0.5) * 200}px, 100vh, 0) rotate(${Math.random() * 1000}deg)`, opacity: 0 }
+            ], {
+                duration: 2000 + Math.random() * 3000,
+                easing: 'cubic-bezier(0, .9, .57, 1)'
+            });
+
+            animation.onfinish = () => confetti.remove();
         }
     }
 
@@ -1319,15 +1359,15 @@ class App {
             <div class="blob" style="top:10%; left:-5%;"></div>
             <div class="blob" style="bottom:10%; right:-5%; background:radial-gradient(circle, rgba(231,76,60,0.05) 0%, rgba(231,76,60,0) 70%);"></div>
 
-            <section class="hero glass-effect" style="position:relative; overflow:hidden; border-radius: var(--radius-xl); margin: 1rem 0 3rem; padding: 6rem 2rem;">
+            <section class="hero glass-card" style="position:relative; overflow:hidden; border-radius: var(--radius-xl); margin: 1rem 0 3rem; padding: 6rem 2rem;">
                 <div class="hero-decor" style="top:-100px; left:-100px;"></div>
                 <div class="hero-decor" style="bottom:-100px; right:-100px;"></div>
                 
                 <div class="fade-in" style="position:relative; z-index:10;">
-                    <span class="goal-badge mantener" style="margin-bottom: 1.5rem; font-size: 0.9rem; padding: 0.5rem 1.5rem; box-shadow: var(--shadow-sm);">
+                    <span class="goal-badge mantener float" style="margin-bottom: 1.5rem; font-size: 0.9rem; padding: 0.5rem 1.5rem; box-shadow: var(--shadow-sm); display: inline-flex; align-items:center;">
                         <i class="fa-solid fa-sparkles"></i> Tu compañero de cocina inteligente
                     </span>
-                    <h1 style="font-size: 4.5rem; margin-bottom: 1rem;">Cuchara <em>&</em> Sabor</h1>
+                    <h1 class="shimmer-text" style="font-size: 4.5rem; margin-bottom: 1rem;">Cuchara <em>&</em> Sabor</h1>
                     <p style="max-width:700px; margin: 0 auto 2.5rem; font-size: 1.25rem;">Descubre recetas saludables adaptadas a tus objetivos, gestiona tu despensa y cocina con ChefiBot.</p>
                     
                     <div class="search-bar glass-effect" style="max-width: 700px; margin: 0 auto; box-shadow: var(--shadow-lg);">
@@ -2192,6 +2232,11 @@ class App {
                 <div id="login-error" class="auth-error"></div>
                 <button type="submit" class="auth-btn">Entrar</button>
             </form>
+            <div class="auth-divider"><span>O continúa con</span></div>
+            <button class="google-btn" onclick="app.handleGoogleLogin()">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+                Iniciar sesión con Google
+            </button>
         `;
     }
 
@@ -2217,6 +2262,11 @@ class App {
                     <button type="submit" class="auth-btn">Crear Cuenta</button>
                 </form>
             </div>
+            <div class="auth-divider"><span>O regístrate con</span></div>
+            <button class="google-btn" onclick="app.handleGoogleLogin()">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
+                Registrarse con Google
+            </button>
         `;
     }
 
@@ -2298,6 +2348,17 @@ class App {
             this.closeAuthModal();
         } catch (error) {
             errDiv.textContent = 'Email o contraseña incorrectos';
+        }
+    }
+
+    async handleGoogleLogin() {
+        const provider = new GoogleAuthProvider();
+        try {
+            await signInWithPopup(this.auth, provider);
+            this.closeAuthModal();
+        } catch (error) {
+            console.error("Google Login Error", error);
+            this.showToast('Error al iniciar sesión con Google', 'fa-triangle-exclamation');
         }
     }
 
@@ -3328,6 +3389,7 @@ class App {
             }
             
             this.exitCookingMode();
+            this.launchConfetti(); // Celebration!
             this.showToast(`¡Receta completada! Llevas ${this.userStats.recipesCooked} recetas. Racha: ${this.userStats.streak} 🔥`, 'fa-trophy');
         }
     }
