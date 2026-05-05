@@ -710,12 +710,12 @@ class App {
     initAdvancedAnimations() {
         // Mouse Parallax for background ingredients
         window.addEventListener('mousemove', (e) => {
-            const moveX = (e.clientX - window.innerWidth / 2) * 0.01;
-            const moveY = (e.clientY - window.innerHeight / 2) * 0.01;
+            const moveX = (e.clientX - window.innerWidth / 2) * 0.005;
+            const moveY = (e.clientY - window.innerHeight / 2) * 0.005;
             
             document.querySelectorAll('.bg-ingredient').forEach((icon, idx) => {
-                const depth = 0.5 + (idx % 10) * 0.1;
-                icon.style.transform = `translate(${moveX * depth}px, ${moveY * depth}px) rotate(${moveX * 0.5}deg)`;
+                const depth = 0.3 + (idx % 10) * 0.05;
+                icon.style.transform = `translate(${moveX * depth}px, ${moveY * depth}px) rotate(${moveX * 0.2}deg)`;
             });
         });
 
@@ -728,8 +728,8 @@ class App {
                 const y = e.clientY - (rect.top + rect.height / 2);
                 const distance = Math.sqrt(x*x + y*y);
                 
-                if (distance < 100) {
-                    btn.style.transform = `translate(${x * 0.2}px, ${y * 0.2}px)`;
+                if (distance < 120) {
+                    btn.style.transform = `translate(${x * 0.1}px, ${y * 0.1}px)`;
                 } else {
                     btn.style.transform = `translate(0, 0)`;
                 }
