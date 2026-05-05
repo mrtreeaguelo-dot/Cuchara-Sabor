@@ -32,16 +32,23 @@ class App {
         this.activeUser = null;
         this.userProfile = null;
         this.opinions = {};
-        this.shoppingList = [];
-        this.favorites = [];
+        try {
+            this.favorites = JSON.parse(localStorage.getItem('cuchara_favorites')) || [];
+            this.shoppingList = JSON.parse(localStorage.getItem('cuchara_shopping')) || [];
+            this.pantry = JSON.parse(localStorage.getItem('cuchara_pantry')) || [];
+            this.userStats = JSON.parse(localStorage.getItem('cuchara_stats')) || { recipesCooked: 0, streak: 0, lastCookedDate: null };
+        } catch (storageErr) {
+            console.warn("Storage access denied or failed", storageErr);
+            this.favorites = [];
+            this.shoppingList = [];
+            this.pantry = [];
+            this.userStats = { recipesCooked: 0, streak: 0, lastCookedDate: null };
+        }
+        this.isImperial = false;
         
         this.activeFilters = {
             category: [], time: [], diet: [], allergen: [], searchQuery: '', goal: [], sort: 'default'
         };
-        
-        this.userStats = { recipesCooked: 0, streak: 0, lastCookedDate: null };
-        this.isImperial = false;
-        
         this.listenToAuth();
         this.listenToOpinions();
         
@@ -79,6 +86,7 @@ class App {
             this.favorites = this.userProfile.favorites || [];
             this.shoppingList = this.userProfile.shoppingList || [];
             this.userStats = this.userProfile.stats || { recipesCooked: 0, streak: 0, lastCookedDate: null };
+            this.pantry = this.userProfile.pantry || [];
         } else {
             // Inicializar perfil si es nuevo
             this.userProfile = {
@@ -3299,7 +3307,7 @@ class App {
         }
     }
 
-    nextCookingStep() {
+    async nextCookingStep() {
         if (!this.currentRecipe) return;
         
         if (this.currentCookingStep < this.currentRecipe.steps.length - 1) {
@@ -3325,14 +3333,35 @@ class App {
     }
 }
 
-// Initialize on DOMContentLoaded to ensure elements like #app-content exist
-document.addEventListener('DOMContentLoaded', () => {
+// Robust Initialization
+function initApp() {
+    if (window.appInstance) return;
     try {
-        window.app = new App();
+        console.log("Cuchara & Sabor: Inyectando motor principal...");
+        window.appInstance = new App();
+        window.app = window.appInstance; // Legacy compatibility
     } catch (e) {
         console.error("Critical: App failed to instantiate", e);
+        var content = document.getElementById('app-content');
+        if (content) {
+            content.innerHTML = `
+                <div style="background:#fff5f5; color:#c53030; padding:2rem; border-radius:1rem; text-align:center; margin:2rem; border:2px solid #feb2b2;">
+                    <i class="fa-solid fa-triangle-exclamation" style="font-size:3rem; margin-bottom:1rem;"></i>
+                    <h3>Error de Inicialización</h3>
+                    <p>${e.message}</p>
+                    <button onclick="location.reload()" style="background:#c53030; color:white; border:none; padding:0.8rem 1.5rem; border-radius:0.5rem; cursor:pointer; margin-top:1rem;">Reintentar carga</button>
+                </div>
+            `;
+        }
     }
-});
+}
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    initApp();
+} else {
+    document.addEventListener('DOMContentLoaded', initApp);
+}
+// Fallback extra para navegadores lentos
+window.addEventListener('load', initApp);
 
 // Quitar la pantalla de carga global de forma segura
 function removeLoader() {

@@ -18,6 +18,7 @@
 
 - **Autenticación Local**: El sistema de usuarios utiliza `localStorage`. Los datos son específicos del navegador y dispositivo actual; no es apto para entornos de producción con datos sensibles sin un backend real.
 - **Persistencia**: Si borras los datos del sitio en tu navegador, se perderán las recetas favoritas, la despensa y las reseñas publicadas.
+- **Protocolo de Reparación**: Consulta el archivo [SOLVE.md](./SOLVE.md) si la aplicación se queda en blanco o no carga en GitHub Pages.
 
 ## 🛠️ Tecnologías Utilizadas
 

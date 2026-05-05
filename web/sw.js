@@ -1,9 +1,10 @@
-const CACHE_NAME = 'cuchara-sabor-v2';
+const CACHE_NAME = 'cuchara-sabor-v4';
 const STATIC_ASSETS = [
   './',
   './index.html',
   './styles.css',
   './app.js',
+  './recipes.js',
   './manifest.json'
 ];
 
@@ -33,28 +34,18 @@ self.addEventListener('activate', (e) => {
     );
 });
 
-// Fetch: Strategy Network-First for external assets, Cache-First for local
+// Fetch: Strategy Network-First for all assets to ensure fresh code in active development
 self.addEventListener('fetch', (e) => {
-    const url = new URL(e.request.url);
-    
-    // External assets (Fonts, Icons, Images) -> Network First
-    if (url.origin !== location.origin) {
-        e.respondWith(
-            fetch(e.request)
-                .then((res) => {
+    e.respondWith(
+        fetch(e.request)
+            .then((res) => {
+                // If valid response, clone and update cache
+                if (res && res.status === 200 && res.type === 'basic' || res.type === 'cors') {
                     const resClone = res.clone();
                     caches.open(CACHE_NAME).then(cache => cache.put(e.request, resClone));
-                    return res;
-                })
-                .catch(() => caches.match(e.request))
-        );
-    } else {
-        // Local assets -> Cache First
-        e.respondWith(
-            caches.match(e.request)
-                .then((response) => {
-                    return response || fetch(e.request);
-                })
-        );
-    }
+                }
+                return res;
+            })
+            .catch(() => caches.match(e.request)) // Fallback to cache if offline
+    );
 });
