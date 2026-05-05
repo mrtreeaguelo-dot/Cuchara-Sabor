@@ -182,7 +182,11 @@ class App {
 
     initBackgroundDecor() {
         const icons = ['fa-lemon', 'fa-pepper-hot', 'fa-carrot', 'fa-apple-whole', 'fa-leaf', 'fa-shrimp', 'fa-egg', 'fa-fish', 'fa-ice-cream', 'fa-cookie', 'fa-seedling', 'fa-pizza-slice'];
-        this.bgContainer = document.body;
+        
+        // Dedicated container for background elements
+        const container = document.createElement('div');
+        container.className = 'bg-ingredients-container';
+        document.body.prepend(container);
         
         // Animated Blobs for depth
         for (let i = 0; i < 5; i++) {
@@ -194,7 +198,7 @@ class App {
             blob.style.height = blob.style.width;
             blob.style.opacity = '0.05';
             blob.style.animationDuration = `${20 + Math.random() * 20}s`;
-            document.body.appendChild(blob);
+            container.appendChild(blob);
         }
 
         for (let i = 0; i < 60; i++) {
@@ -202,21 +206,21 @@ class App {
             const posY = Math.random() * 100;
             const size = Math.random() * (2.5 - 1.0) + 1.0; 
             const blur = Math.random() > 0.8 ? (Math.random() * 3) : 0;
-            const duration = 20 + Math.random() * 30;
+            const duration = 25 + Math.random() * 45;
             const rotation = Math.random() * 360;
             
             const icon = document.createElement('i');
             icon.className = `fa-solid ${icons[Math.floor(Math.random() * icons.length)]} bg-ingredient`;
             icon.style.left = `${posX}%`;
             icon.style.top = `${posY}%`;
-            icon.style.transform = `rotate(${rotation}deg)`;
+            icon.style.setProperty('--init-rot', `${rotation}deg`);
             icon.style.setProperty('--drift-x', `${(Math.random() - 0.5) * 400}px`);
             icon.style.setProperty('--drift-y', `${(Math.random() - 0.5) * 400}px`);
             icon.style.setProperty('--size', `${size}rem`);
             icon.style.setProperty('--blur', `${blur}px`);
             icon.style.setProperty('--duration', `${duration}s`);
             
-            this.bgContainer.appendChild(icon);
+            container.appendChild(icon);
         }
     }
 

@@ -2996,16 +2996,26 @@ em {
     pointer-events: none;
 }
 
-.bg-ingredient {
+.bg-ingredients-container {
     position: fixed;
-    z-index: -1;
-    opacity: 0.12;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.bg-ingredient {
+    position: absolute;
+    opacity: 0.15;
     color: var(--primary-color);
     pointer-events: none;
     animation: chaosFloating var(--duration) infinite linear;
     filter: blur(var(--blur));
     font-size: var(--size);
-    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: opacity 0.6s ease;
 }
 
 [data-theme="dark"] .bg-ingredient {
@@ -3013,11 +3023,11 @@ em {
 }
 
 @keyframes chaosFloating {
-    0% { transform: translate(0, 0) rotate(0deg); }
-    25% { transform: translate(var(--drift-x), var(--drift-y)) rotate(90deg); }
-    50% { transform: translate(calc(var(--drift-x) * -0.8), calc(var(--drift-y) * 1.2)) rotate(180deg); }
-    75% { transform: translate(calc(var(--drift-x) * 0.5), calc(var(--drift-y) * -1.5)) rotate(270deg); }
-    100% { transform: translate(0, 0) rotate(360deg); }
+    0% { transform: translate(0, 0) rotate(var(--init-rot)); }
+    25% { transform: translate(var(--drift-x), var(--drift-y)) rotate(calc(var(--init-rot) + 90deg)); }
+    50% { transform: translate(calc(var(--drift-x) * -0.8), calc(var(--drift-y) * 1.2)) rotate(calc(var(--init-rot) + 180deg)); }
+    75% { transform: translate(calc(var(--drift-x) * 0.5), calc(var(--drift-y) * -1.5)) rotate(calc(var(--init-rot) + 270deg)); }
+    100% { transform: translate(0, 0) rotate(calc(var(--init-rot) + 360deg)); }
 }
 
 /* AI Thinking Animation */
