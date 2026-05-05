@@ -2,7 +2,7 @@ $listener = [System.Net.HttpListener]::new()
 $listener.Prefixes.Add('http://localhost:8765/')
 $listener.Start()
 Write-Host 'Server started on http://localhost:8765 (no-cache)'
-$root = 'c:\Users\mhernandeza\OneDrive - ARQUISOCIAL, S.L\Escritorio\proyecto\agent\web'
+$root = $PSScriptRoot
 
 while ($listener.IsListening) {
     $ctx = $listener.GetContext()

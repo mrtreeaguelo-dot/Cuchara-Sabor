@@ -19,13 +19,16 @@ const firebaseConfig = {
  */
 class App {
     constructor() {
+        // Detectar si estamos en modo Demo (sin config real)
+        this.isDemoMode = firebaseConfig.apiKey === "API_KEY_PLACEHOLDER";
+        
         // Robust initialization
         try {
             this.app = initializeApp(firebaseConfig);
             this.auth = getAuth(this.app);
             this.db = getFirestore(this.app);
         } catch (e) {
-            console.error("Firebase initialization failed. Ensure firebaseConfig is correct.", e);
+            console.warn("Firebase initialization failed. Running in static mode.", e);
         }
         
         this.contentDiv = document.getElementById('app-content');
@@ -84,25 +87,44 @@ class App {
 
     async syncUserProfile() {
         if (!this.activeUser) return;
-        const userDoc = await getDoc(doc(this.db, "users", this.activeUser.uid));
-        if (userDoc.exists()) {
-            this.userProfile = userDoc.data();
-            this.favorites = this.userProfile.favorites || [];
-            this.shoppingList = this.userProfile.shoppingList || [];
-            this.userStats = this.userProfile.stats || { recipesCooked: 0, streak: 0, lastCookedDate: null };
-            this.pantry = this.userProfile.pantry || [];
-        } else {
-            // Inicializar perfil si es nuevo (ej. Google Login)
+        
+        if (this.isDemoMode) {
+            // Mock profile for demo mode
             this.userProfile = {
-                name: this.activeUser.displayName || 'Usuario',
-                email: this.activeUser.email,
-                favorites: [],
-                shoppingList: [],
-                pantry: [],
-                stats: { recipesCooked: 0, streak: 0, lastCookedDate: null },
-                createdAt: serverTimestamp()
+                name: this.activeUser.displayName || 'Usuario Demo',
+                email: this.activeUser.email || 'demo@cucharasabor.com',
+                favorites: JSON.parse(localStorage.getItem('cuchara_favorites')) || [],
+                shoppingList: JSON.parse(localStorage.getItem('cuchara_shopping')) || [],
+                pantry: JSON.parse(localStorage.getItem('cuchara_pantry')) || [],
+                stats: this.userStats,
+                createdAt: new Date().toISOString()
             };
-            await setDoc(doc(this.db, "users", this.activeUser.uid), this.userProfile);
+            return;
+        }
+
+        try {
+            const userDoc = await getDoc(doc(this.db, "users", this.activeUser.uid));
+            if (userDoc.exists()) {
+                this.userProfile = userDoc.data();
+                this.favorites = this.userProfile.favorites || [];
+                this.shoppingList = this.userProfile.shoppingList || [];
+                this.userStats = this.userProfile.stats || { recipesCooked: 0, streak: 0, lastCookedDate: null };
+                this.pantry = this.userProfile.pantry || [];
+            } else {
+                // Inicializar perfil si es nuevo (ej. Google Login)
+                this.userProfile = {
+                    name: this.activeUser.displayName || 'Usuario',
+                    email: this.activeUser.email,
+                    favorites: [],
+                    shoppingList: [],
+                    pantry: [],
+                    stats: { recipesCooked: 0, streak: 0, lastCookedDate: null },
+                    createdAt: serverTimestamp()
+                };
+                await setDoc(doc(this.db, "users", this.activeUser.uid), this.userProfile);
+            }
+        } catch (err) {
+            console.error("Error syncing profile:", err);
         }
     }
 
@@ -125,12 +147,22 @@ class App {
         });
     }
     init() {
+        // Inicializar Tema (Oscuro/Claro)
+        this.initTheme();
+
         // Evento cambio de Hash
         window.addEventListener('hashchange', () => {
             const route = window.location.hash.replace('#', '').split('/')[0] || 'home';
             const params = window.location.hash.replace('#', '').split('/')[1];
             this.renderRoute(route, params);
             this.updateNavHighlight(route);
+        });
+
+        // Manejar botones atrás/adelante del navegador
+        window.addEventListener('popstate', (e) => {
+            const route = e.state?.route || window.location.hash.replace('#', '').split('/')[0] || 'home';
+            const params = e.state?.params || window.location.hash.replace('#', '').split('/')[1] || null;
+            this.renderRoute(route, params, false);
         });
 
         // Listener de Scroll para barra de progreso y efectos
@@ -145,10 +177,26 @@ class App {
             document.querySelectorAll('.reveal-on-scroll').forEach(el => {
                 const rect = el.getBoundingClientRect();
                 if (rect.top < window.innerHeight - 100) {
-                    el.classList.add('revealed');
+                    el.classList.add('reveal-visible');
                 }
             });
         });
+
+        // Animaciones avanzadas
+        this.initScrollAnimations();
+        this.initAdvancedAnimations();
+
+        // Offline Handling
+        const offlineBanner = document.getElementById('offline-banner');
+        window.addEventListener('online', () => {
+            if (offlineBanner) offlineBanner.style.display = 'none';
+        });
+        window.addEventListener('offline', () => {
+            if (offlineBanner) offlineBanner.style.display = 'block';
+        });
+        if (!navigator.onLine && offlineBanner) {
+            offlineBanner.style.display = 'block';
+        }
 
         // Inicializar UI y decoración
         this.updateShoppingBadge();
@@ -169,7 +217,6 @@ class App {
                 const route = window.location.hash.replace('#', '').split('/')[0] || 'home';
                 const params = window.location.hash.replace('#', '').split('/')[1] || null;
                 
-                console.log("Initializing route:", route);
                 this.renderRoute(route, params);
             } catch (err) {
                 console.error("Initialization error:", err);
@@ -750,29 +797,6 @@ class App {
         });
     }
 
-    init() {
-        this.initScrollAnimations();
-        this.initAdvancedAnimations();
-        window.addEventListener('popstate', (e) => {
-            const route = e.state?.route || 'home';
-            const params = e.state?.params || null;
-            this.renderRoute(route, params, false);
-        });
-
-        // Offline Handling
-        const offlineBanner = document.getElementById('offline-banner');
-        window.addEventListener('online', () => {
-            if (offlineBanner) offlineBanner.style.display = 'none';
-        });
-        window.addEventListener('offline', () => {
-            if (offlineBanner) offlineBanner.style.display = 'block';
-        });
-        if (!navigator.onLine && offlineBanner) {
-            offlineBanner.style.display = 'block';
-        }
-
-        this.navigate('home');
-    }
 
     navigate(route, params = null) {
         window.history.pushState({ route, params }, '', `#${route}${params ? '/' + params : ''}`);
@@ -1444,6 +1468,9 @@ class App {
                         <p class="reveal-on-scroll" style="color:var(--text-light); margin-top:0.5rem; font-size:1.1rem;">Recetas curadas por expertos para tu bienestar.</p>
                     </div>
                     <a href="#" onclick="app.navigate('explore'); return false;" class="reveal-on-scroll" style="color:var(--primary-color); font-weight:700; font-size:1.1rem; display:flex; align-items:center; gap:0.5rem;">Explorar todas <i class="fa-solid fa-chevron-right"></i></a>
+                </div>
+                <div class="recipes-grid">
+                    ${mockRecipes.filter(r => r.tags.includes('Gourmet')).slice(0, 4).map((recipe, index) => this.createRecipeCard(recipe, index)).join('')}
                 </div>
             </section>
         `;
@@ -2376,6 +2403,23 @@ class App {
     }
 
     async handleGoogleLogin() {
+        if (this.isDemoMode) {
+            this.showToast('Iniciando sesión en modo Demo...', 'fa-spinner fa-spin');
+            setTimeout(async () => {
+                this.activeUser = {
+                    uid: 'demo-user-123',
+                    displayName: 'Usuario Premium',
+                    email: 'demo@cucharasabor.com',
+                    photoURL: 'https://ui-avatars.com/api/?name=Usuario+Premium&background=D35400&color=fff'
+                };
+                await this.syncUserProfile();
+                this.updateUserUI();
+                this.closeAuthModal();
+                this.showToast(`¡Bienvenido en modo Demo, ${this.activeUser.displayName}!`, 'fa-star');
+            }, 1000);
+            return;
+        }
+
         const provider = new GoogleAuthProvider();
         try {
             await signInWithPopup(this.auth, provider);

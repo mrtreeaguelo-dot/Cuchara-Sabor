@@ -591,7 +591,7 @@ em {
 }
 
 .btn-action {
-    background: white;
+    background: var(--card-bg);
     border: 1px solid var(--border-color);
     padding: 0.8rem 1.5rem;
     border-radius: 50px;
@@ -1316,7 +1316,7 @@ em {
 .final-result {
     margin-top: 4rem;
     text-align: center;
-    background: white;
+    background: var(--card-bg);
     padding: 3rem;
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-sm);
@@ -1357,7 +1357,7 @@ em {
     flex-direction: column;
     gap: 1.5rem;
     text-align: left;
-    background: white;
+    background: var(--card-bg);
     padding: 3rem;
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-sm);
@@ -3769,4 +3769,59 @@ em {
 
 [data-theme="dark"] .google-btn:hover {
     background: #3d4446;
+}
+
+/* Global Dark Mode Enforcement */
+[data-theme="dark"] {
+    color-scheme: dark;
+}
+
+[data-theme="dark"] body {
+    background-color: var(--bg-color);
+    color: var(--text-dark);
+}
+
+[data-theme="dark"] .hero,
+[data-theme="dark"] .page-container,
+[data-theme="dark"] .final-result,
+[data-theme="dark"] .contact-form,
+[data-theme="dark"] .auth-banner-reviews,
+[data-theme="dark"] .review-form-card,
+[data-theme="dark"] .review-card-alt,
+[data-theme="dark"] .chefi-card,
+[data-theme="dark"] .side-drawer,
+[data-theme="dark"] .drawer-footer,
+[data-theme="dark"] .modal-content,
+[data-theme="dark"] .planner-card,
+[data-theme="dark"] .meal-slot,
+[data-theme="dark"] .stat-box {
+    background-color: var(--card-bg);
+    color: var(--text-dark);
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+    background-color: var(--bg-color) !important;
+    color: var(--text-dark) !important;
+    border-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .tag-desayunos,
+[data-theme="dark"] .tag-snacks {
+    color: #000 !important;
+}
+
+[data-theme="dark"] .glass-effect {
+    background: var(--glass-bg);
+    border-color: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-track {
+    background: #121212;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: #333;
+    border: 3px solid #121212;
 }
