@@ -616,7 +616,7 @@ for (let i = 1; i <= 488; i++) {
             carbs: (category === 'Postres') ? 30 + (i % 40) : 20 + (i % 50),
             fats: 5 + (i % 20)
         },
-        chefTip: `Para este plato ${culture.toLowerCase()}, el secreto es el toque ${style.toLowerCase()} que realza el sabor de la base de ${category === 'Postres' ? flavor.toLowerCase() : prot?.toLowerCase() || 'ingredientes'}.`,
+        chefTip: `Para este plato ${culture.toLowerCase()}, el secreto es el toque ${style.toLowerCase()} que realza el sabor de la base de ${category === 'Postres' ? flavor.toLowerCase() : (prot ? prot.toLowerCase() : 'ingredientes')}.`,
         allergens: ['Sin frutos secos'],
         ingredients: ingredients,
         adaptation: {

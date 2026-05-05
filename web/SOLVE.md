@@ -94,6 +94,11 @@ Este registro profundiza en el "por qué" y el "cómo" de las modificaciones rea
 ### 5. 🔄 Gestión de Versiones y Caché
 *   **Service Worker v6:** El Service Worker es el "guardián" de los archivos. Al subir a la versión `v6`, le ordenamos al navegador que ignore cualquier archivo viejo que tenga guardado y descargue esta nueva estructura de diseño y lógica, asegurando que todos los cambios sean visibles de inmediato.
 
+### 6. 🐛 Corrección de Error de Sintaxis (recipes.js)
+- **Problema:** Se detectó un error `Uncaught SyntaxError: missing ) after argument list` en el generador de recetas.
+- **Causa:** El uso de encadenamiento opcional (`?.`) dentro de un template literal en un entorno con compatibilidad limitada causaba un error de interpretación.
+- **Solución:** Se ha reemplazado el operador `?.` por una comprobación ternaria estándar `(prot ? prot.toLowerCase() : 'ingredientes')`, garantizando que el script sea compatible con todos los navegadores y despliegues (incluyendo GitHub Pages).
+
 ---
 > [!NOTE]
 > **Efecto Neto:** Estas mejoras han transformado una aplicación funcional en una **experiencia de usuario fluida**, eliminando puntos de fricción técnica y visual que restaban profesionalidad al proyecto.
