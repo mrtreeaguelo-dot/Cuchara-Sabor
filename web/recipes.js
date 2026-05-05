@@ -616,7 +616,7 @@ for (let i = 1; i <= 488; i++) {
             carbs: (category === 'Postres') ? 30 + (i % 40) : 20 + (i % 50),
             fats: 5 + (i % 20)
         },
-        chefTip: `En esta receta de ${category.toLowerCase()}, el secreto es la frescura de los ingredientes principales.`,
+        chefTip: `Para este plato ${culture.toLowerCase()}, el secreto es el toque ${style.toLowerCase()} que realza el sabor de la base de ${category === 'Postres' ? flavor.toLowerCase() : prot?.toLowerCase() || 'ingredientes'}.`,
         allergens: ['Sin frutos secos'],
         ingredients: ingredients,
         adaptation: {
@@ -630,5 +630,14 @@ for (let i = 1; i <= 488; i++) {
         ],
         finalResult: 'Un resultado equilibrado y apetitoso.',
         seoSchema: { "@context": "https://schema.org/", "@type": "Recipe", "name": title }
-    });
+    };
+
+    // Añadir tags de objetivo basados en macros
+    if (generatedRecipe.macros.calories > 600 || generatedRecipe.macros.protein > 35) {
+        generatedRecipe.tags.push('Ganar peso');
+    } else if (generatedRecipe.macros.calories < 400) {
+        generatedRecipe.tags.push('Perder peso');
+    }
+
+    mockRecipes.push(generatedRecipe);
 }

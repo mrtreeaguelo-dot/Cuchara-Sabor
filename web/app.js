@@ -827,12 +827,13 @@ class App {
                     if (params && params !== 'all') {
                         if (params.startsWith('?q=')) {
                             this.activeFilters.searchQuery = decodeURIComponent(params.substring(3));
-                        } else if (['Vegano', 'Keto', 'Alto en proteínas'].includes(params)) {
-                            // Si el parámetro es una dieta/etiqueta conocida, la añadimos a diet
-                            this.activeFilters.diet.push(params);
                         } else {
-                            // Por defecto lo tratamos como categoría
-                            this.activeFilters.category.push(params);
+                            const diets = ['Vegano', 'Vegetariano', 'Keto', 'Sin gluten', 'Bajo en calorías', 'Alto en proteínas', 'Saludable', 'Gourmet'];
+                            if (diets.includes(params)) {
+                                this.activeFilters.diet.push(params);
+                            } else {
+                                this.activeFilters.category.push(params);
+                            }
                         }
                     }
                     this.renderExplore();
@@ -1090,7 +1091,11 @@ class App {
 
     loadMoreRecipes() {
         this.recipesToShow += 12;
-        this.updateExploreGrid();
+        if (window.location.hash.includes('explore')) {
+            this.updateExploreGrid();
+        } else {
+            this.renderHome(true);
+        }
     }
 
     toggleFilter(category, value) {
@@ -1381,7 +1386,8 @@ class App {
         if (append) {
             const grid = document.querySelector('.recipes-grid');
             if (grid) {
-                grid.innerHTML = featuredHtml;
+                const recipesHtml = recipes.map((recipe, index) => this.createRecipeCard(recipe, index)).join('');
+                grid.innerHTML = recipesHtml;
                 const loadMoreBtn = document.getElementById('load-more-btn');
                 if (this.recipesToShow >= mockRecipes.length) {
                     if (loadMoreBtn) loadMoreBtn.style.display = 'none';
@@ -1452,9 +1458,9 @@ class App {
                 </div>
             </section>
 
-            <section class="categories-carousel fade-in-stagger" style="margin-bottom: 5rem;">
+            <section class="categories-carousel fade-in-stagger" style="margin-bottom: 5rem; padding: 0 1.2rem; gap: 1rem;">
                 <button class="category-btn" onclick="app.navigate('explore', 'Desayunos')"><i class="fa-solid fa-mug-hot"></i> Desayunos</button>
-                <button class="category-btn" onclick="app.navigate('explore', 'Almuerzos')"><i class="fa-solid fa-utensils"></i> Almuerzos</button>
+                <button class="category-btn" onclick="app.navigate('explore', 'Comidas')"><i class="fa-solid fa-utensils"></i> Comidas</button>
                 <button class="category-btn" onclick="app.navigate('explore', 'Cenas')"><i class="fa-solid fa-moon"></i> Cenas</button>
                 <button class="category-btn" onclick="app.navigate('explore', 'Postres')"><i class="fa-solid fa-ice-cream"></i> Postres</button>
                 <button class="category-btn" onclick="app.navigate('explore', 'Vegano')"><i class="fa-solid fa-leaf"></i> Vegano</button>
@@ -3173,18 +3179,27 @@ class App {
                 
                 // Objective match (High priority)
                 if (goal) {
-                    const recipeGoal = recipe.tags.includes('Perder peso') ? 'Perder peso' : (recipe.tags.includes('Ganar peso') ? 'Ganar peso' : 'Para todos');
-                    if (recipeGoal !== goal) goalMatch = false;
+                    const normalizedGoal = goal.toLowerCase();
+                    const isGanar = normalizedGoal.includes('ganar') || normalizedGoal.includes('masa') || normalizedGoal.includes('músculo') || normalizedGoal.includes('volumen');
+                    const isPerder = normalizedGoal.includes('perder') || normalizedGoal.includes('definición') || normalizedGoal.includes('bajar');
+                    
+                    const hasGanarTag = recipe.tags.includes('Ganar peso') || (recipe.macros?.protein > 30 && recipe.macros?.calories > 500);
+                    const hasPerderTag = recipe.tags.includes('Perder peso') || (recipe.macros?.calories < 400);
+
+                    if (isGanar && !hasGanarTag) goalMatch = false;
+                    if (isPerder && !hasPerderTag) goalMatch = false;
                 }
 
                 // Ingredient/Title match
                 userIngs.forEach(userIng => {
-                    if (recipe.ingredients.some(ri => ri.toLowerCase().includes(userIng)) || recipe.title.toLowerCase().includes(userIng)) {
-                        score += 10;
+                    if (recipe.ingredients.some(ri => ri.toLowerCase().includes(userIng)) || 
+                        recipe.title.toLowerCase().includes(userIng) ||
+                        recipe.tags.some(rt => rt.toLowerCase().includes(userIng))) {
+                        score += 15; // Increased weight
                     }
                 });
 
-                return { recipe, score: goalMatch ? score : score - 100 };
+                return { recipe, score: goalMatch ? score : score - 150 };
             });
 
             // Filter out non-matches and sort
@@ -3301,10 +3316,6 @@ class App {
         `;
     }
 
-    loadMoreRecipes() {
-        this.recipesToShow += 12;
-        this.renderHome(true);
-    }
 
     enterCookingMode(recipeId) {
         const recipe = mockRecipes.find(r => r.id === recipeId);

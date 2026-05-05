@@ -60,5 +60,13 @@ Revisar siempre que cualquier `await` esté dentro de una función marcada como 
 
 ---
 
+## 🤖 ChefiBot & Inteligencia de Recetas
+Si ChefiBot no encuentra recetas adecuadas o las sugerencias son genéricas:
+1. **Verificar Tags de Objetivo:** Asegurarse de que el generador en `recipes.js` asigne `Ganar peso` o `Perder peso` basándose en las macros reales (ej: >600kcal para ganar).
+2. **Sinonimia en Búsqueda:** ChefiBot debe detectar palabras como "masa", "músculo" o "volumen" como sinónimos de "Ganar peso".
+3. **Tips Específicos:** Los `chefTip` no deben ser genéricos. Deben inyectar el `style` y `culture` de la receta dinámicamente para que parezcan consejos reales de un chef.
+
+---
+
 > [!TIP]
 > **Comando de Emergencia:** Si después de aplicar estos pasos sigue fallando, borra el registro de Service Workers en la pestaña "Application" de las herramientas de desarrollador y haz un Hard Reload (`Ctrl + F5`).
