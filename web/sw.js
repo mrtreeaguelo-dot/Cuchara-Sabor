@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cuchara-sabor-v4';
+const CACHE_NAME = 'cuchara-sabor-v5';
 const STATIC_ASSETS = [
   './',
   './index.html',

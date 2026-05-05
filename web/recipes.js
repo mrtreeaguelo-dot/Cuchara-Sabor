@@ -532,10 +532,10 @@ const categories = ['Desayunos', 'Comidas', 'Cenas', 'Snacks', 'Postres'];
 const difficulties = ['Fácil', 'Media', 'Difícil'];
 
 const ingredientsPool = {
-    'Proteínas': ['Pollo', 'Ternera', 'Cerdo', 'Salmón', 'Tofu', 'Garbanzos', 'Lentejas', 'Gambas', 'Huevos'],
-    'Base': ['Arroz', 'Pasta', 'Quinoa', 'Cuscús', 'Patatas', 'Pan', 'Tortillas', 'Harina'],
-    'Vegetales': ['Cebolla', 'Ajo', 'Tomate', 'Espárragos', 'Pimientos', 'Brócoli', 'Espinacas', 'Aguacate'],
-    'Sabor': ['Aceite de oliva', 'Limón', 'Salsa de soja', 'Curry', 'Cilantro', 'Albahaca', 'Queso', 'Miel']
+    'Proteínas': ['Salmón', 'Tofu', 'Ternera', 'Pollo', 'Lentejas', 'Garbanzos', 'Pavo', 'Huevos', 'Atún', 'Quinoa', 'Pescado Blanco'],
+    'Base': ['Arroz', 'Pasta', 'Ensalada', 'Tacos', 'Pan Integral', 'Wraps', 'Cuscús', 'Boniato', 'Quinoa'],
+    'Vegetales': ['Cebolla', 'Ajo', 'Tomate', 'Espárragos', 'Pimientos', 'Brócoli', 'Espinacas', 'Aguacate', 'Zanahoria'],
+    'Sabor': ['Aceite de oliva', 'Limón', 'Salsa de soja', 'Curry', 'Cilantro', 'Albahaca', 'Queso', 'Miel', 'Cacahuete', 'Pimentón']
 };
 
 const styles = ['Crujiente', 'Braiseado', 'al Horno', 'Salteado', 'Marinado', 'Especialidad', 'Supremo', 'Exótico', 'Rústico', 'Imperial', 'Zen', 'Vibrante'];
@@ -601,7 +601,7 @@ for (let i = 1; i <= 488; i++) {
         ingredients = [`250g de ${prot}`, `150g de ${base}`, `${flavor} de primera calidad`, 'Especias del chef'];
     }
     
-    mockRecipes.push({
+    const generatedRecipe = {
         id: `recipe-${i}`,
         title: title,
         description: description,
@@ -633,7 +633,7 @@ for (let i = 1; i <= 488; i++) {
     };
 
     // Añadir tags de objetivo basados en macros
-    if (generatedRecipe.macros.calories > 600 || generatedRecipe.macros.protein > 35) {
+    if (generatedRecipe.macros.calories > 550 || generatedRecipe.macros.protein > 30) {
         generatedRecipe.tags.push('Ganar peso');
     } else if (generatedRecipe.macros.calories < 400) {
         generatedRecipe.tags.push('Perder peso');

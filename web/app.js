@@ -19,6 +19,11 @@ const firebaseConfig = {
  */
 class App {
     constructor() {
+        // [ANTI-FLICKER] Initialize theme immediately
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        this.theme = savedTheme;
+
         // Detectar si estamos en modo Demo (sin config real)
         this.isDemoMode = firebaseConfig.apiKey === "API_KEY_PLACEHOLDER";
         
@@ -201,6 +206,7 @@ class App {
         // Inicializar UI y decoración
         this.updateShoppingBadge();
         this.initBackgroundDecor();
+        this.initMacrosAndRecipes(); // Crucial: Carga las recetas extra y macros
         
         // Estado de paginación
         this.recipesToShow = 12;
@@ -209,9 +215,13 @@ class App {
         // Ocultar pantalla de carga
         setTimeout(() => {
             try {
+                // Hide global loader with smooth fade only after first meaningful render
                 const loader = document.getElementById('global-loader');
                 if (loader) {
-                    loader.classList.add('loader-hidden');
+                    setTimeout(() => {
+                        loader.style.opacity = '0';
+                        setTimeout(() => loader.style.display = 'none', 600);
+                    }, 500);
                 }
                 // Primera carga de ruta
                 const route = window.location.hash.replace('#', '').split('/')[0] || 'home';
@@ -440,10 +450,12 @@ class App {
             }
         );
 
-        const proteins = ['Pollo', 'Ternera', 'Salmón', 'Tofu', 'Pavo', 'Atún', 'Huevo', 'Heura'];
-        const carbs = ['Arroz Integral', 'Quinoa', 'Boniato', 'Patata Asada', 'Cuscús', 'Pasta'];
-        const veggies = ['Brócoli', 'Espárragos', 'Espinacas', 'Calabacín', 'Pimientos', 'Champiñones'];
-        const flavors = ['Ajo', 'Limón', 'Salsa Barbacoa', 'Curry', 'Chocolate', 'Vainilla', 'Queso', 'Bacon'];
+        const ingredientPool = {
+    'Proteínas': ['Salmón', 'Tofu', 'Ternera', 'Pollo', 'Lentejas', 'Garbanzos', 'Pavo', 'Huevos', 'Atún', 'Quinoa', 'Pescado Blanco'],
+    'Base': ['Arroz', 'Pasta', 'Ensalada', 'Tacos', 'Pan Integral', 'Wraps', 'Cuscús', 'Boniato', 'Quinoa'],
+    'Vegetales': ['Cebolla', 'Ajo', 'Tomate', 'Espárragos', 'Pimientos', 'Brócoli', 'Espinacas', 'Aguacate', 'Zanahoria'],
+    'Sabor': ['Aceite de oliva', 'Limón', 'Salsa de soja', 'Curry', 'Cilantro', 'Albahaca', 'Queso', 'Miel', 'Cacahuete', 'Pimentón']
+};
 
         const imageDB = {
             'Pollo': [
@@ -503,10 +515,10 @@ class App {
 
         for (let i = 1; i <= 100; i++) {
             const isFit = i <= 50;
-            const p = pick(proteins, i);
-            const c = pick(carbs, i + 3);
-            const v = pick(veggies, i + 7);
-            const f = pick(flavors, i + 11);
+            const p = pick(ingredientPool.Proteínas, i);
+            const c = pick(ingredientPool.Base, i + 3);
+            const v = pick(ingredientPool.Vegetales, i + 7);
+            const f = pick(ingredientPool.Sabor, i + 11);
             
             let title = isFit ? `Bowl Nutritivo de ${p} con ${v}` : `Plato Casero de ${p} y ${c} al ${f}`;
             if (i > 80) title = `Postre Indulgente de ${f}`;
@@ -928,11 +940,12 @@ class App {
     }
 
     handleSearch(inputId = 'main-search') {
-        const query = document.getElementById(inputId)?.value;
+        const input = document.getElementById(inputId);
+        const query = input?.value?.trim();
         if (query) {
             this.navigate('explore', '?q=' + encodeURIComponent(query));
         } else {
-            this.showToast('Introduce algo para buscar', 'fa-magnifying-glass');
+            this.showToast('¿Qué ingrediente o plato buscas?', 'fa-magnifying-glass');
         }
     }
 
@@ -3177,29 +3190,32 @@ class App {
                 let score = 0;
                 let goalMatch = true;
                 
-                // Objective match (High priority)
+                // Objective match
                 if (goal) {
                     const normalizedGoal = goal.toLowerCase();
                     const isGanar = normalizedGoal.includes('ganar') || normalizedGoal.includes('masa') || normalizedGoal.includes('músculo') || normalizedGoal.includes('volumen');
                     const isPerder = normalizedGoal.includes('perder') || normalizedGoal.includes('definición') || normalizedGoal.includes('bajar');
                     
-                    const hasGanarTag = recipe.tags.includes('Ganar peso') || (recipe.macros?.protein > 30 && recipe.macros?.calories > 500);
+                    const hasGanarTag = recipe.tags.includes('Ganar peso') || (recipe.macros?.protein > 28 && recipe.macros?.calories > 500);
                     const hasPerderTag = recipe.tags.includes('Perder peso') || (recipe.macros?.calories < 400);
 
-                    if (isGanar && !hasGanarTag) goalMatch = false;
-                    if (isPerder && !hasPerderTag) goalMatch = false;
+                    if (isGanar && !hasGanarTag) score -= 50; // Penalty instead of boolean block
+                    if (isPerder && !hasPerderTag) score -= 50;
+                    
+                    if ((isGanar && hasGanarTag) || (isPerder && hasPerderTag)) score += 30;
                 }
 
-                // Ingredient/Title match
+                // Ingredient/Title match (High priority)
                 userIngs.forEach(userIng => {
-                    if (recipe.ingredients.some(ri => ri.toLowerCase().includes(userIng)) || 
-                        recipe.title.toLowerCase().includes(userIng) ||
-                        recipe.tags.some(rt => rt.toLowerCase().includes(userIng))) {
-                        score += 15; // Increased weight
+                    const lowIng = userIng.toLowerCase();
+                    if (recipe.ingredients.some(ri => ri.toLowerCase().includes(lowIng)) || 
+                        recipe.title.toLowerCase().includes(lowIng) ||
+                        recipe.tags.some(rt => rt.toLowerCase().includes(lowIng))) {
+                        score += 40; // High score for ingredient match
                     }
                 });
 
-                return { recipe, score: goalMatch ? score : score - 150 };
+                return { recipe, score };
             });
 
             // Filter out non-matches and sort
@@ -3216,9 +3232,13 @@ class App {
                         </p>
                         <div style="display:flex; flex-direction:column; gap:0.8rem;">
                             ${bestMatches.map(s => `
-                                <div class="chefi-card" onclick="app.navigate('recipe', '${s.recipe.id}')" style="margin:0;">
+                                <div class="chefi-card" onclick="app.navigate('recipe', '${s.recipe.id}')" style="margin:0; cursor:pointer;">
                                     <h4 style="margin:0; font-size:0.95rem; color:var(--text-dark);">${s.recipe.title}</h4>
-                                    <p style="font-size:0.75rem; color:var(--text-light); margin-top:0.2rem;">${s.recipe.time} • ${s.recipe.macros?.calories || '?'} kcal</p>
+                                    <p style="font-size:0.75rem; color:var(--text-light); margin-top:0.2rem;">
+                                        <i class="fa-regular fa-clock"></i> ${s.recipe.time} • 
+                                        <i class="fa-solid fa-fire"></i> ${s.recipe.macros?.calories || 'N/A'} kcal • 
+                                        <i class="fa-solid fa-dumbbell"></i> ${s.recipe.macros?.protein || 'N/A'}g prot
+                                    </p>
                                 </div>
                             `).join('')}
                         </div>
@@ -3299,7 +3319,7 @@ class App {
                     <h3 style="margin: 0.8rem 0 0.5rem; font-size:1.25rem;">${recipe.title}</h3>
                     <div class="card-meta" style="margin-bottom: 0.8rem;">
                         <span><i class="fa-regular fa-clock"></i> ${recipe.time}</span>
-                        <span><i class="fa-solid fa-fire"></i> ${recipe.macros?.calories || '?'} kcal</span>
+                        <span><i class="fa-solid fa-fire"></i> ${recipe.macros?.calories || '450'} kcal</span>
                     </div>
                     <p class="card-desc" style="font-size:0.85rem; line-height:1.5; height: 3em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">${recipe.description}</p>
                     
