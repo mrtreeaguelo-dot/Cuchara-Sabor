@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, query, where, getDocs, onSnapshot, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { mockRecipes } from "./recipes.js";
 
@@ -13,6 +13,10 @@ const firebaseConfig = {
     appId: "APP_ID"
 };
 
+/**
+ * Cuchara & Sabor - Motor Principal v2.1.0 Premium
+ * Estabilidad, Animaciones Fluidas y Sincronización Real
+ */
 class App {
     constructor() {
         // Robust initialization
@@ -88,12 +92,15 @@ class App {
             this.userStats = this.userProfile.stats || { recipesCooked: 0, streak: 0, lastCookedDate: null };
             this.pantry = this.userProfile.pantry || [];
         } else {
-            // Inicializar perfil si es nuevo
+            // Inicializar perfil si es nuevo (ej. Google Login)
             this.userProfile = {
                 name: this.activeUser.displayName || 'Usuario',
+                email: this.activeUser.email,
                 favorites: [],
                 shoppingList: [],
-                stats: { recipesCooked: 0, streak: 0, lastCookedDate: null }
+                pantry: [],
+                stats: { recipesCooked: 0, streak: 0, lastCookedDate: null },
+                createdAt: serverTimestamp()
             };
             await setDoc(doc(this.db, "users", this.activeUser.uid), this.userProfile);
         }
@@ -2228,7 +2235,13 @@ class App {
             </div>
             <form onsubmit="event.preventDefault(); app.handleLogin();">
                 <input type="email" id="login-email" class="auth-input" placeholder="Correo electrónico" required>
-                <input type="password" id="login-pass" class="auth-input" placeholder="Contraseña" required>
+                <div style="position:relative;">
+                    <input type="password" id="login-pass" class="auth-input" placeholder="Contraseña" required>
+                    <button type="button" onclick="const p=document.getElementById('login-pass'); p.type=p.type==='password'?'text':'password';" style="position:absolute; right:1rem; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--text-light); cursor:pointer;"><i class="fa-solid fa-eye"></i></button>
+                </div>
+                <div style="text-align:right; margin:-0.5rem 0 1rem;">
+                    <a href="#" onclick="app.handleForgotPassword(); return false;" style="font-size:0.85rem; color:var(--primary-color); text-decoration:none;">¿Olvidaste tu contraseña?</a>
+                </div>
                 <div id="login-error" class="auth-error"></div>
                 <button type="submit" class="auth-btn">Entrar</button>
             </form>
@@ -2250,14 +2263,20 @@ class App {
                 <form onsubmit="event.preventDefault(); app.handleRegister();">
                     <input type="text" id="reg-name" class="auth-input" placeholder="Nombre completo" required maxlength="50">
                     <input type="email" id="reg-email" class="auth-input" placeholder="Correo electrónico" required maxlength="50">
-                    <input type="password" id="reg-pass" class="auth-input" placeholder="Contraseña (mín. 8 caracteres)" required minlength="8" maxlength="50" oninput="app.updatePasswordStrength(this.value)">
+                    <div style="position:relative;">
+                        <input type="password" id="reg-pass" class="auth-input" placeholder="Contraseña (mín. 8 caracteres)" required minlength="8" maxlength="50" oninput="app.updatePasswordStrength(this.value)">
+                        <button type="button" onclick="const p=document.getElementById('reg-pass'); p.type=p.type==='password'?'text':'password';" style="position:absolute; right:1rem; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--text-light); cursor:pointer;"><i class="fa-solid fa-eye"></i></button>
+                    </div>
                     
                     <div class="password-strength-meter">
                         <div id="strength-bar" class="strength-bar"></div>
                     </div>
                     <div id="strength-text" class="strength-text">Fuerza: -</div>
 
-                    <input type="password" id="reg-pass-confirm" class="auth-input" placeholder="Confirmar contraseña" required minlength="8" maxlength="50">
+                    <div style="position:relative;">
+                        <input type="password" id="reg-pass-confirm" class="auth-input" placeholder="Confirmar contraseña" required minlength="8" maxlength="50">
+                        <button type="button" onclick="const p=document.getElementById('reg-pass-confirm'); p.type=p.type==='password'?'text':'password';" style="position:absolute; right:1rem; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--text-light); cursor:pointer;"><i class="fa-solid fa-eye"></i></button>
+                    </div>
                     <div id="reg-error" class="auth-error"></div>
                     <button type="submit" class="auth-btn">Crear Cuenta</button>
                 </form>
@@ -2320,12 +2339,13 @@ class App {
             const userCredential = await createUserWithEmailAndPassword(this.auth, email, pass);
             const user = userCredential.user;
             
-            // Perfil inicial en Firestore
+            // Perfil inicial en Firestore (Consistente con syncUserProfile)
             this.userProfile = {
                 name: this.escapeHTML(name),
                 email: email,
                 favorites: [],
                 shoppingList: [],
+                pantry: [],
                 stats: { recipesCooked: 0, streak: 0, lastCookedDate: null },
                 createdAt: serverTimestamp()
             };
@@ -2369,6 +2389,20 @@ class App {
             this.navigate('home');
         } catch (error) {
             this.showToast('Error al cerrar sesión', 'fa-circle-exclamation');
+        }
+    }
+
+    async handleForgotPassword() {
+        const email = document.getElementById('login-email').value.trim();
+        if (!email) {
+            this.showToast('Introduce tu email primero', 'fa-envelope');
+            return;
+        }
+        try {
+            await sendPasswordResetEmail(this.auth, email);
+            this.showToast('Email de recuperación enviado. Revisa tu bandeja.', 'fa-paper-plane');
+        } catch (error) {
+            this.showToast('Error: ' + error.message, 'fa-triangle-exclamation');
         }
     }
 
@@ -3426,20 +3460,26 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
 window.addEventListener('load', initApp);
 
 // Quitar la pantalla de carga global de forma segura
+// Quitar la pantalla de carga global de forma segura y con suavidad
 function removeLoader() {
     const loader = document.getElementById('global-loader');
     if (loader && loader.style.display !== 'none') {
         loader.style.opacity = '0';
-        loader.style.transition = 'opacity 0.6s ease';
-        setTimeout(() => loader.style.display = 'none', 600);
+        loader.style.transition = 'opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+        setTimeout(() => {
+            loader.style.display = 'none';
+            // Trigger an entry animation for the main content
+            const content = document.getElementById('app-content');
+            if (content) content.classList.add('route-ready');
+        }, 800);
     }
 }
 
-// Ejecutar al DOMContentLoaded para no depender de imágenes lentas
-document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(removeLoader, 500);
-});
-
-// Fallback por si DOMContentLoaded ya saltó (al usar script defer)
-setTimeout(removeLoader, 800);
-window.addEventListener('load', removeLoader);
+// Ejecutar lo antes posible para evitar esperas innecesarias
+if (document.readyState === 'complete') {
+    removeLoader();
+} else {
+    window.addEventListener('load', removeLoader);
+}
+// Fallback de seguridad inamovible
+setTimeout(removeLoader, 2500);
