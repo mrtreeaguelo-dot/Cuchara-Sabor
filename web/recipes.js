@@ -572,7 +572,7 @@ export const mockRecipes = [
 const cultures = ['Mexicana', 'Japonesa', 'Italiana', 'Española', 'India', 'Tailandesa', 'Francesa', 'Griega', 'Marroquí', 'China', 'Peruana', 'Venezolana', 'Americana', 'Libanesa', 'Etíope', 'Turca', 'Coreana', 'Vietnamita'];
 const categories = ['Desayunos', 'Comidas', 'Cenas', 'Snacks', 'Postres'];
 const difficulties = ['Fácil', 'Media', 'Difícil'];
-
+const ingredientsPool = {
     'Proteínas': [
         { name: 'Salmón', cal: 208, prot: 20, fat: 13, carb: 0, allergens: ['Pescado'] },
         { name: 'Tofu', cal: 76, prot: 8, fat: 4.8, carb: 1.9, allergens: ['Soja'] },
