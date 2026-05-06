@@ -262,6 +262,7 @@ export const mockRecipes = [
         difficulty: 'Difícil',
         category: 'Comidas',
         tags: ['Japonesa', 'Tradicional', 'Sopa'],
+        macros: { calories: 650, protein: 28, carbs: 70, fats: 25 },
         chefTip: 'El secreto está en el "tare" (la base de sabor). No escatimes en la calidad de la soja.',
         allergens: ['Sin lactosa', 'Sin frutos secos'],
         ingredients: [
@@ -292,6 +293,7 @@ export const mockRecipes = [
         difficulty: 'Media',
         category: 'Comidas',
         tags: ['Española', 'Tradicional', 'Arroz'],
+        macros: { calories: 520, protein: 24, carbs: 65, fats: 18 },
         chefTip: 'No remuevas el arroz una vez distribuido para conseguir el "socarrat".',
         allergens: ['Sin Gluten', 'Sin lactosa', 'Sin huevo'],
         ingredients: [
@@ -324,6 +326,7 @@ export const mockRecipes = [
         difficulty: 'Media',
         category: 'Comidas',
         tags: ['Mexicana', 'Tradicional', 'Picante'],
+        macros: { calories: 420, protein: 28, carbs: 35, fats: 18 },
         chefTip: 'La piña asada es fundamental para equilibrar el adobo de la carne.',
         allergens: ['Sin lactosa', 'Sin huevo'],
         ingredients: [
@@ -354,6 +357,7 @@ export const mockRecipes = [
         difficulty: 'Media',
         category: 'Comidas',
         tags: ['Griega', 'Tradicional', 'Horno'],
+        macros: { calories: 580, protein: 32, carbs: 40, fats: 35 },
         chefTip: 'Escurre bien las berenjenas con sal para que no suelten agua en el pastel.',
         allergens: ['Sin frutos secos'],
         ingredients: [
@@ -384,6 +388,7 @@ export const mockRecipes = [
         difficulty: 'Fácil',
         category: 'Cenas',
         tags: ['Tailandesa', 'Fácil', 'Wok'],
+        macros: { calories: 480, protein: 22, carbs: 65, fats: 14 },
         chefTip: 'No cocines demasiado los fideos antes de saltearlos; deben terminar de cocerse en el wok.',
         allergens: ['Sin Gluten', 'Sin lactosa'],
         ingredients: [
@@ -414,6 +419,7 @@ export const mockRecipes = [
         difficulty: 'Media',
         category: 'Cenas',
         tags: ['India', 'Cremoso', 'Especias'],
+        macros: { calories: 620, protein: 35, carbs: 15, fats: 48 },
         chefTip: 'Usa mantequilla clarificada (ghee) para un sabor más auténtico.',
         allergens: ['Sin Gluten', 'Sin huevo'],
         ingredients: [
@@ -444,6 +450,7 @@ export const mockRecipes = [
         difficulty: 'Fácil',
         category: 'Comidas',
         tags: ['Venezolana', 'Sin Gluten', 'Aguacate'],
+        macros: { calories: 480, protein: 22, carbs: 45, fats: 24 },
         chefTip: 'La masa debe estar húmeda pero no pegajosa. Déjala reposar 5 min antes de formar.',
         allergens: ['Sin Gluten', 'Sin lactosa', 'Sin huevo', 'Sin frutos secos'],
         ingredients: [
@@ -474,6 +481,7 @@ export const mockRecipes = [
         difficulty: 'Difícil',
         category: 'Comidas',
         tags: ['China', 'Al vapor', 'Tradicional'],
+        macros: { calories: 280, protein: 18, carbs: 42, fats: 4 },
         chefTip: 'La masa de Har Gow es muy delicada. Mantén los discos bajo un paño húmedo.',
         allergens: ['Sin lactosa', 'Sin huevo', 'Sin frutos secos'],
         ingredients: [
@@ -503,6 +511,7 @@ export const mockRecipes = [
         difficulty: 'Fácil',
         category: 'Comidas',
         tags: ['Peruana', 'Fresca', 'Pescado'],
+        macros: { calories: 220, protein: 32, carbs: 12, fats: 4 },
         chefTip: 'Usa pescado de máxima frescura. El marinado no debe exceder los 10 minutos.',
         allergens: ['Sin Gluten', 'Sin lactosa', 'Sin huevo', 'Sin frutos secos'],
         ingredients: [
@@ -523,6 +532,39 @@ export const mockRecipes = [
         ],
         finalResult: 'Frescura cítrica y picante pura.',
         seoSchema: { "@context": "https://schema.org/", "@type": "Recipe", "name": "Ceviche Peruano" }
+    },
+    {
+        id: 'pasta-carbonara',
+        title: 'Pasta Carbonara Auténtica',
+        description: 'La verdadera receta italiana: sin nata, solo huevo, pecorino, guanciale y pimienta.',
+        image: 'https://images.unsplash.com/photo-1612874742237-6526221588e3?w=600&q=80&fit=crop',
+        time: '15 min',
+        difficulty: 'Media',
+        category: 'Comidas',
+        tags: ['Italiana', 'Tradicional', 'Pasta'],
+        macros: { calories: 780, protein: 32, carbs: 85, fats: 38 },
+        chefTip: 'El secreto es el calor residual. Nunca cuajes el huevo con fuego directo o tendrás tortilla de pasta.',
+        allergens: ['Gluten', 'Huevo', 'Lácteos'],
+        ingredients: [
+            '200g de pasta (Spaghetti o Rigatoni)',
+            '100g de guanciale o panceta curada',
+            '2 huevos grandes',
+            '50g de queso Pecorino Romano rallado',
+            'Pimienta negra recién molida',
+            'Sal'
+        ],
+        adaptation: {
+            title: 'Opción más ligera',
+            text: 'Usa menos pasta y aumenta el queso para mantener el sabor con menos carbohidratos.'
+        },
+        steps: [
+            { text: 'Cuece la pasta en agua con sal.', image: null },
+            { text: 'Dora el guanciale en una sartén hasta que esté crujiente.', image: null },
+            { text: 'Bate los huevos con el queso y mucha pimienta.', image: null },
+            { text: 'Mezcla la pasta con el guanciale, añade un poco de agua de cocción y, fuera del fuego, incorpora la crema de huevo.', image: null }
+        ],
+        finalResult: 'Una salsa cremosa y sedosa que envuelve la pasta.',
+        seoSchema: { "@context": "https://schema.org/", "@type": "Recipe", "name": "Pasta Carbonara" }
     }
 ];
 
@@ -531,24 +573,29 @@ const cultures = ['Mexicana', 'Japonesa', 'Italiana', 'Española', 'India', 'Tai
 const categories = ['Desayunos', 'Comidas', 'Cenas', 'Snacks', 'Postres'];
 const difficulties = ['Fácil', 'Media', 'Difícil'];
 
-const ingredientsPool = {
-    'Proteínas': ['Salmón', 'Tofu', 'Ternera', 'Pollo', 'Lentejas', 'Garbanzos', 'Pavo', 'Huevos', 'Atún', 'Quinoa', 'Pescado Blanco'],
-    'Base': ['Arroz', 'Pasta', 'Ensalada', 'Tacos', 'Pan Integral', 'Wraps', 'Cuscús', 'Boniato', 'Quinoa'],
-    'Vegetales': ['Cebolla', 'Ajo', 'Tomate', 'Espárragos', 'Pimientos', 'Brócoli', 'Espinacas', 'Aguacate', 'Zanahoria'],
-    'Sabor': ['Aceite de oliva', 'Limón', 'Salsa de soja', 'Curry', 'Cilantro', 'Albahaca', 'Queso', 'Miel', 'Cacahuete', 'Pimentón']
+    'Proteínas': [
+        { name: 'Salmón', cal: 208, prot: 20, fat: 13, carb: 0, allergens: ['Pescado'] },
+        { name: 'Tofu', cal: 76, prot: 8, fat: 4.8, carb: 1.9, allergens: ['Soja'] },
+        { name: 'Ternera', cal: 250, prot: 26, fat: 15, carb: 0, allergens: [] },
+        { name: 'Pollo', cal: 165, prot: 31, fat: 3.6, carb: 0, allergens: [] },
+        { name: 'Lentejas', cal: 116, prot: 9, fat: 0.4, carb: 20, allergens: ['Legumbres'] },
+        { name: 'Garbanzos', cal: 164, prot: 8.9, fat: 2.6, carb: 27, allergens: ['Legumbres'] },
+        { name: 'Pavo', cal: 135, prot: 30, fat: 1, carb: 0, allergens: [] },
+        { name: 'Atún', cal: 130, prot: 29, fat: 0.6, carb: 0, allergens: ['Pescado'] },
+        { name: 'Pescado Blanco', cal: 90, prot: 20, fat: 1, carb: 0, allergens: ['Pescado'] }
+    ],
+    'Base': [
+        { name: 'Arroz', cal: 130, carb: 28, prot: 2.7, fat: 0.3, allergens: [] },
+        { name: 'Pasta', cal: 158, carb: 31, prot: 5.8, fat: 0.9, allergens: ['Gluten'] },
+        { name: 'Ensalada', cal: 15, carb: 3, prot: 1.4, fat: 0.2, allergens: [] },
+        { name: 'Tacos', cal: 150, carb: 20, prot: 4, fat: 5, allergens: ['Maíz'] },
+        { name: 'Pan Integral', cal: 247, carb: 41, prot: 13, fat: 3.4, allergens: ['Gluten'] },
+        { name: 'Boniato', cal: 86, carb: 20, prot: 1.6, fat: 0.1, allergens: [] },
+        { name: 'Quinoa', cal: 120, carb: 21, prot: 4.4, fat: 1.9, allergens: [] }
+    ]
 };
 
-const styles = ['Crujiente', 'Braiseado', 'al Horno', 'Salteado', 'Marinado', 'Especialidad', 'Supremo', 'Exótico', 'Rústico', 'Imperial', 'Zen', 'Vibrante'];
-
-const dessertIngredients = {
-    'Bases': ['Chocolate', 'Yogur', 'Avena', 'Frutas del Bosque', 'Manzana', 'Plátano', 'Mascarpone', 'Hojaldre'],
-    'Toppings': ['Miel', 'Canela', 'Vainilla', 'Nueces', 'Almendras', 'Cacao', 'Sirope de Arce', 'Menta']
-};
-
-const snackIngredients = {
-    'Bases': ['Garbanzos', 'Frutos Secos', 'Queso', 'Maíz', 'Edamame', 'Zanahoria', 'Pepino', 'Nachos'],
-    'Dips': ['Hummus', 'Guacamole', 'Tzatziki', 'Salsa Picante', 'Crema de Queso']
-};
+const styles = ['Crujiente', 'Braiseado', 'al Horno', 'Salteado', 'Marinado', 'al Vapor', 'Rústico', 'Imperial', 'Zen', 'Vibrante'];
 
 for (let i = 1; i <= 488; i++) {
     const culture = cultures[i % cultures.length];
@@ -556,49 +603,57 @@ for (let i = 1; i <= 488; i++) {
     const difficulty = difficulties[i % difficulties.length];
     let category = 'Comidas';
     
-    // Asignación de categoría primero
     if (i % 8 === 0) category = 'Desayunos';
     else if (i % 11 === 0) category = 'Postres';
     else if (i % 14 === 0) category = 'Snacks';
     else if (i % 3 === 0) category = 'Cenas';
 
-    let title, description, ingredients, prot, base, flavor;
+    let title, description, ingredients, protObj, baseObj, flavor;
+    let finalMacros = { calories: 0, protein: 0, carbs: 0, fats: 0 };
+    let allergens = [];
 
     if (category === 'Postres') {
-        base = dessertIngredients['Bases'][i % dessertIngredients['Bases'].length];
         flavor = dessertIngredients['Toppings'][i % dessertIngredients['Toppings'].length];
-        title = `${style} de ${base} con ${flavor} ${culture}`;
-        description = `Un postre delicado que combina la textura de ${base.toLowerCase()} con el aroma de ${flavor.toLowerCase()}, ideal para cerrar una comida ${culture.toLowerCase()}.`;
-        ingredients = [`200g de ${base}`, `${flavor} para decorar`, 'Azúcar moreno o Stevia', 'Esencia artesanal'];
+        const baseName = dessertIngredients['Bases'][i % dessertIngredients['Bases'].length];
+        title = `${style} de ${baseName} y ${flavor}`;
+        description = `Un postre delicado al estilo ${culture} que combina ${baseName.toLowerCase()} con un toque de ${flavor.toLowerCase()}.`;
+        ingredients = [`200g de ${baseName}`, `${flavor} para decorar`, 'Esencia de vainilla', 'Miel'];
+        finalMacros = { calories: 250 + (i % 150), protein: 5 + (i % 5), carbs: 40 + (i % 30), fats: 10 + (i % 10) };
+        if (baseName === 'Chocolate') allergens.push('Lácteos');
+        if (baseName === 'Yogur' || baseName === 'Mascarpone') allergens.push('Lácteos');
+        if (baseName === 'Avena' || baseName === 'Hojaldre') allergens.push('Gluten');
     } else if (category === 'Desayunos') {
-        prot = (i % 2 === 0) ? 'Huevos' : 'Avena';
-        base = (i % 2 === 0) ? 'Pan Integral' : 'Leche de Almendras';
-        title = `Desayuno ${culture}: ${prot} con ${base}`;
-        description = `Empieza el día con energía gracias a esta receta de ${prot.toLowerCase()} preparada al estilo ${culture.toLowerCase()}.`;
-        ingredients = [`Ración de ${prot}`, `${base} de calidad`, 'Fruta fresca', 'Semillas de chía'];
+        const isEgg = i % 2 === 0;
+        title = `Desayuno ${culture}: ${isEgg ? 'Huevos' : 'Avena'} con ${isEgg ? 'Tostadas' : 'Fruta'}`;
+        ingredients = isEgg ? ['2 Huevos', 'Pan integral', 'Aguacate'] : ['Avena', 'Leche de almendras', 'Frutos rojos'];
+        finalMacros = isEgg ? { calories: 350, protein: 18, carbs: 25, fats: 20 } : { calories: 280, protein: 12, carbs: 45, fats: 8 };
+        allergens = isEgg ? ['Huevo', 'Gluten'] : ['Frutos Secos'];
+        description = `Empieza el día con energía al estilo ${culture}.`;
     } else if (category === 'Snacks') {
-        base = snackIngredients['Bases'][i % snackIngredients['Bases'].length];
+        const snackBase = snackIngredients['Bases'][i % snackIngredients['Bases'].length];
         flavor = snackIngredients['Dips'][i % snackIngredients['Dips'].length];
-        title = `Bocado de ${base} con ${flavor} ${culture}`;
-        description = `Un snack saludable y rápido: ${base.toLowerCase()} acompañado de un toque de ${flavor.toLowerCase()}.`;
-        ingredients = [`100g de ${base}`, `${flavor} para dipear`, 'Sal y especias ligeras'];
+        title = `Bocado de ${snackBase} con ${flavor}`;
+        ingredients = [`100g de ${snackBase}`, `${flavor}`, 'Especias'];
+        finalMacros = { calories: 150 + (i % 100), protein: 5 + (i % 10), carbs: 10 + (i % 20), fats: 5 + (i % 10) };
+        if (snackBase === 'Queso' || flavor === 'Crema de Queso' || flavor === 'Tzatziki') allergens.push('Lácteos');
+        if (snackBase === 'Frutos Secos') allergens.push('Frutos Secos');
+        description = `Un snack ligero y equilibrado.`;
     } else {
-        // Comidas y Cenas (Salados)
-        prot = ingredientsPool['Proteínas'][i % ingredientsPool['Proteínas'].length];
-        // Evitar huevos en cenas/comidas generadas para mayor variedad
-        if (prot === 'Huevos') prot = 'Pollo'; 
-        base = ingredientsPool['Base'][i % ingredientsPool['Base'].length];
+        protObj = ingredientsPool['Proteínas'][i % ingredientsPool['Proteínas'].length];
+        baseObj = ingredientsPool['Base'][i % ingredientsPool['Base'].length];
         flavor = ingredientsPool['Sabor'][i % ingredientsPool['Sabor'].length];
         
-        const titlePatterns = [
-            `${prot} ${style} con ${base} al estilo ${culture}`,
-            `Delicia ${culture} de ${base} y ${prot}`,
-            `Secreto de ${culture}: ${prot} con Toque de ${flavor}`,
-            `${prot} Marinado sobre Cama de ${base} ${culture}`
-        ];
-        title = titlePatterns[i % titlePatterns.length];
-        description = `Una creación culinaria que destaca por el ${prot.toLowerCase()} preparado con la técnica ${style.toLowerCase()}, fusionando sabores de la cocina ${culture.toLowerCase()}.`;
-        ingredients = [`250g de ${prot}`, `150g de ${base}`, `${flavor} de primera calidad`, 'Especias del chef'];
+        title = `${protObj.name} ${style} sobre ${baseObj.name} al estilo ${culture}`;
+        description = `Una exquisita combinación de ${protObj.name.toLowerCase()} preparado con técnica ${style.toLowerCase()}, acompañado de ${baseObj.name.toLowerCase()}.`;
+        ingredients = [`200g de ${protObj.name}`, `150g de ${baseObj.name}`, `${flavor}`, 'Aceite de oliva', 'Sal'];
+        
+        // CÁLCULO REAL BASADO EN PESOS (200g proteína + 150g base)
+        finalMacros.calories = Math.round((protObj.cal * 2) + (baseObj.cal * 1.5) + 90); // +90 por aceite
+        finalMacros.protein = Math.round((protObj.prot * 2) + (baseObj.prot * 1.5));
+        finalMacros.carbs = Math.round((protObj.carb * 2) + (baseObj.carb * 1.5));
+        finalMacros.fats = Math.round((protObj.fat * 2) + (baseObj.fat * 1.5) + 10);
+        
+        allergens = [...protObj.allergens, ...baseObj.allergens];
     }
     
     const generatedRecipe = {
@@ -606,38 +661,35 @@ for (let i = 1; i <= 488; i++) {
         title: title,
         description: description,
         image: `https://images.unsplash.com/photo-${1500000000000 + (i * 123) % 100000}?w=600&fit=crop&q=60`,
-        time: (category === 'Postres' || category === 'Snacks') ? `${10 + (i % 20)} min` : `${20 + (i % 40)} min`,
+        time: (category === 'Postres' || category === 'Snacks') ? `${15 + (i % 15)} min` : `${25 + (i % 35)} min`,
         difficulty: difficulty,
         category: category,
         tags: [culture, category, style, 'Gourmet'],
-        macros: {
-            calories: (category === 'Postres' || category === 'Snacks') ? 150 + (i % 200) : 350 + (i % 400),
-            protein: (category === 'Postres') ? 2 + (i % 10) : 20 + (i % 30),
-            carbs: (category === 'Postres') ? 30 + (i % 40) : 20 + (i % 50),
-            fats: 5 + (i % 20)
-        },
-        chefTip: `Para este plato ${culture.toLowerCase()}, el secreto es el toque ${style.toLowerCase()} que realza el sabor de la base de ${category === 'Postres' ? flavor.toLowerCase() : (prot ? prot.toLowerCase() : 'ingredientes')}.`,
-        allergens: ['Sin frutos secos'],
+        macros: finalMacros,
+        chefTip: `Para este plato ${culture.toLowerCase()}, el secreto es el toque ${style.toLowerCase()} que realza el sabor de la base. ¡Disfrútalo caliente!`,
+        allergens: allergens.length > 0 ? allergens : ['Sin alérgenos comunes'],
         ingredients: ingredients,
         adaptation: {
             title: 'Tip de Salud',
-            text: 'Puedes reducir las calorías sustituyendo el azúcar por edulcorante o el aceite por spray.'
+            text: 'Puedes reducir las calorías sustituyendo el aceite por spray de cocina o usando una base de verduras.'
         },
         steps: [
-            { text: `Prepara los ingredientes principales de tu ${title.toLowerCase()}.`, image: null },
+            { text: `Prepara los ingredientes principales frescos.`, image: null },
             { text: `Cocina siguiendo el estilo ${style.toLowerCase()} tradicional.`, image: null },
             { text: 'Sirve inmediatamente y disfruta.', image: null }
         ],
         finalResult: 'Un resultado equilibrado y apetitoso.',
-        seoSchema: { "@context": "https://schema.org/", "@type": "Recipe", "name": title }
+        seoSchema: { 
+            "@context": "https://schema.org/", 
+            "@type": "Recipe", 
+            "name": title,
+            "recipeCategory": category,
+            "recipeCuisine": culture
+        }
     };
 
-    // Añadir tags de objetivo basados en macros
-    if (generatedRecipe.macros.calories > 550 || generatedRecipe.macros.protein > 30) {
-        generatedRecipe.tags.push('Ganar peso');
-    } else if (generatedRecipe.macros.calories < 400) {
-        generatedRecipe.tags.push('Perder peso');
-    }
+    if (generatedRecipe.macros.calories > 550) generatedRecipe.tags.push('Ganar peso');
+    else if (generatedRecipe.macros.calories < 400) generatedRecipe.tags.push('Perder peso');
 
     mockRecipes.push(generatedRecipe);
 }

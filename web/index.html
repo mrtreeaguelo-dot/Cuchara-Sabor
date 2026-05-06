@@ -142,6 +142,12 @@
                 <i class="fa-solid fa-utensils"></i>
                 <span>Cuchara <em>&amp;</em> Sabor</span>
             </div>
+            <div class="header-search-container">
+                <div class="search-bar header-search glass-effect">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="header-search" placeholder="Buscar recetas..." onkeypress="if(event.key==='Enter') app.handleSearch('header-search')">
+                </div>
+            </div>
             
             <nav class="main-nav" id="main-nav">
                 <ul class="nav-list">
@@ -156,17 +162,17 @@
             </nav>
 
             <div class="header-actions">
-                <button class="header-icon-btn" onclick="app.toggleTimerPanel()" title="Temporizadores">
+                <button class="header-icon-btn" onclick="app.toggleTimerPanel()" title="Temporizadores" aria-label="Abrir temporizadores">
                     <i class="fa-solid fa-stopwatch"></i>
                 </button>
                 
-                <button class="header-icon-btn" id="shopping-btn" onclick="app.navigate('shopping')" title="Lista de la compra">
+                <button class="header-icon-btn" id="shopping-btn" onclick="app.navigate('shopping')" title="Lista de la compra" aria-label="Ver lista de la compra">
                     <i class="fa-solid fa-cart-shopping"></i>
                     <span class="header-badge" id="shopping-badge" style="display:none;">0</span>
                 </button>
                 
                 <div id="user-dropdown-container" class="user-dropdown-container">
-                    <button class="header-icon-btn" id="login-nav-btn" onclick="app.showAuthModal('login')" title="Iniciar Sesión">
+                    <button class="header-icon-btn" id="login-nav-btn" onclick="app.showAuthModal('login')" title="Iniciar Sesión" aria-label="Iniciar sesión o ver perfil">
                         <i class="fa-solid fa-user"></i>
                     </button>
                 </div>
@@ -242,6 +248,10 @@
                     </form>
                 </div>
             </div>
+            <!-- Floating Action Button: Back to Top -->
+            <button id="back-to-top" class="fab-btn" onclick="window.scrollTo({top:0, behavior:'smooth'})" aria-label="Volver arriba">
+                <i class="fa-solid fa-arrow-up"></i>
+            </button>
             <div class="footer-bottom">
                 <p>&copy; 2026 Cuchara &amp; Sabor. Todos los derechos reservados. Hecho con <i class="fa-solid fa-heart" style="color:var(--primary-color);"></i></p>
             </div>

@@ -61,6 +61,7 @@ class App {
         this.activeFilters = {
             category: [], time: [], diet: [], allergen: [], searchQuery: '', goal: [], sort: 'default'
         };
+        this.activeTimers = [];
         this.listenToAuth();
         this.listenToOpinions();
         
@@ -151,6 +152,13 @@ class App {
             }
         });
     }
+    escapeHTML(str) {
+        if (!str) return "";
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
     init() {
         // Inicializar Tema (Oscuro/Claro)
         this.initTheme();
@@ -177,6 +185,13 @@ class App {
             const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
             const scrolledPercent = (winScroll / height) * 100;
             if (scrollBar) scrollBar.style.width = scrolledPercent + "%";
+
+            // Botón Back to Top
+            const backToTop = document.getElementById('back-to-top');
+            if (backToTop) {
+                if (winScroll > 600) backToTop.classList.add('visible');
+                else backToTop.classList.remove('visible');
+            }
 
             // Revelar elementos al hacer scroll
             document.querySelectorAll('.reveal-on-scroll').forEach(el => {
@@ -696,26 +711,20 @@ class App {
         this.showToast(`${addedCount} ingredientes añadidos`, 'fa-cart-plus');
     }
 
-    updateShoppingBadge() {
-        const badge = document.getElementById('shopping-badge');
-        if (!badge) return;
-        const count = this.shoppingList.length;
-        if (count > 0) {
-            badge.textContent = count;
-            badge.style.display = 'flex';
-        } else {
-            badge.style.display = 'none';
-        }
-    }
-
-
-
     removeFromShoppingList(index) {
         if (!this.checkAuth()) return;
         this.shoppingList.splice(index, 1);
-        localStorage.setItem(`cuchara_shop_${this.activeUser.username}`, JSON.stringify(this.shoppingList));
         this.updateShoppingBadge();
+        
+        if (this.activeUser && !this.isDemoMode) {
+            updateDoc(doc(this.db, "users", this.activeUser.uid), {
+                shoppingList: this.shoppingList
+            });
+        }
+        
+        // Re-render list
         this.renderShoppingList();
+        this.showToast('Ingrediente eliminado', 'fa-trash');
     }
 
     showToast(message, icon) {
@@ -880,7 +889,12 @@ class App {
                     this.updateSchema({});
                     break;
                 case 'recipe':
-                    this.renderRecipe(params);
+                    const exists = mockRecipes.find(r => r.id === params);
+                    if (exists) {
+                        this.renderRecipe(params);
+                    } else {
+                        this.renderNotFound('Receta no encontrada');
+                    }
                     break;
                 case 'about':
                     this.renderAbout();
@@ -891,7 +905,7 @@ class App {
                     this.updateSchema({});
                     break;
                 default:
-                    this.renderHome();
+                    this.renderNotFound('Página no encontrada');
             }
             
             window.scrollTo(0, 0);
@@ -899,6 +913,35 @@ class App {
             this.contentDiv.classList.add('route-ready');
             setTimeout(() => this.contentDiv.classList.remove('route-ready'), 600);
         }, 300);
+    }
+
+    renderNotFound(message) {
+        this.contentDiv.innerHTML = `
+            <div class="page-container" style="text-align:center; padding:5rem 2rem; animation:fadeInUp 0.6s ease;">
+                <div style="font-size:8rem; color:var(--primary-color); margin-bottom:2rem; opacity:0.2;">
+                    <i class="fa-solid fa-utensils-slash"></i>
+                </div>
+                <h1 style="font-size:3rem; margin-bottom:1rem; font-family:var(--font-heading);">¡Ups! Plato no encontrado</h1>
+                <p style="color:var(--text-light); font-size:1.2rem; margin-bottom:3rem;">${message}. Parece que el chef ha cambiado la carta hoy.</p>
+                
+                <div style="margin-bottom:4rem;">
+                    <button class="btn-action active" onclick="app.navigate('home')" style="padding:1rem 2.5rem; font-size:1.1rem;">
+                        <i class="fa-solid fa-house"></i> Volver a la cocina
+                    </button>
+                    <button class="btn-action" onclick="app.surpriseMe()" style="padding:1rem 2.5rem; font-size:1.1rem; margin-left:1rem;">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Sorpréndeme
+                    </button>
+                </div>
+
+                <div style="max-width:1200px; margin:0 auto;">
+                    <h3 style="margin-bottom:2rem; color:var(--text-dark);">Quizás te interese esto:</h3>
+                    <div class="recipes-grid">
+                        ${mockRecipes.slice(0, 4).map((r, i) => this.createRecipeCard(r, i)).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+        this.updateSchema({});
     }
 
     updateSchema(data) {
@@ -942,8 +985,19 @@ class App {
     handleSearch(inputId = 'main-search') {
         const input = document.getElementById(inputId);
         const query = input?.value?.trim();
+        
         if (query) {
+            // Reset filters for a clean search
+            this.activeFilters = { category: [], time: [], diet: [], allergen: [], searchQuery: query, goal: [], sort: 'default' };
+            this.recipesToShow = 12;
+            
+            // Navigate to explore
             this.navigate('explore', '?q=' + encodeURIComponent(query));
+            
+            // If we are already in explore, the navigate call will renderExplore -> updateExploreGrid
+            // but we ensure the input field in explore is also updated if it exists
+            const exploreInput = document.getElementById('explore-search');
+            if (exploreInput) exploreInput.value = query;
         } else {
             this.showToast('¿Qué ingrediente o plato buscas?', 'fa-magnifying-glass');
         }
@@ -1077,10 +1131,22 @@ class App {
                 </aside>
 
                     <div class="recipes-content">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem; flex-wrap:wrap; gap:1rem;">
-                            <h2 class="section-title" style="text-align: left; margin:0;">Descubrir Recetas</h2>
-                            <div id="active-filters-list" style="display:flex; gap:0.5rem; flex-wrap:wrap;"></div>
+                        <div class="explore-header-actions" style="display:flex; flex-direction:column; gap:1.5rem; width:100%;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+                                <h2 class="section-title" style="text-align: left; margin:0; font-family:var(--font-heading);">Descubrir Recetas</h2>
+                                <div id="active-filters-list" style="display:flex; gap:0.5rem; flex-wrap:wrap;"></div>
+                            </div>
+                            
+                            <div class="search-bar glass-effect" style="width:100%; max-width: none; margin: 0; box-shadow: var(--shadow-sm); border: 1px solid var(--border-color);">
+                                <i class="fa-solid fa-magnifying-glass" style="margin-left:1.5rem; color:var(--text-light);"></i>
+                                <input type="text" id="explore-search" placeholder="Busca por ingrediente, nombre o categoría..." 
+                                    value="${this.activeFilters.searchQuery}" 
+                                    oninput="app.activeFilters.searchQuery = this.value; app.updateExploreGrid();"
+                                    onkeypress="if(event.key==='Enter') app.updateExploreGrid();">
+                                <button onclick="app.updateExploreGrid()" style="padding: 0 2rem; background: var(--primary-color); border-radius: 0 var(--radius-md) var(--radius-md) 0;">Filtrar</button>
+                            </div>
                         </div>
+                    </div>
                         <div class="recipes-grid" id="explore-grid">
                             <!-- Rendered by updateExploreGrid() -->
                         </div>
@@ -1125,7 +1191,10 @@ class App {
         const grid = document.getElementById('explore-grid');
         if (!grid) return;
 
-        // [SKELETON] Show skeletons briefly for premium feel
+        // Debounce / Clear existing timeout
+        if (this.searchTimeout) clearTimeout(this.searchTimeout);
+
+        // Show skeletons briefly
         grid.innerHTML = Array(6).fill(0).map(() => `
             <div class="skeleton-card">
                 <div class="skeleton-img skeleton"></div>
@@ -1134,7 +1203,7 @@ class App {
             </div>
         `).join('');
 
-        setTimeout(() => {
+        this.searchTimeout = setTimeout(() => {
             let filtered = mockRecipes.filter(recipe => {
                 // Search Query filter (Multi-word support for pantry/search)
                 if (this.activeFilters.searchQuery) {
@@ -1225,7 +1294,17 @@ class App {
 
             const loadMoreBtn = document.getElementById('load-more-btn');
             if (loadMoreBtn) {
-                loadMoreBtn.style.display = filtered.length > this.recipesToShow ? 'inline-block' : 'none';
+                if (filtered.length > this.recipesToShow) {
+                    loadMoreBtn.style.display = 'inline-block';
+                } else {
+                    loadMoreBtn.style.display = 'none';
+                    if (filtered.length > 4) {
+                        const endMarker = document.createElement('div');
+                        endMarker.className = 'end-of-list reveal-on-scroll';
+                        endMarker.innerHTML = '<i class="fa-solid fa-check-double"></i> Has llegado al final de nuestra selección gourmet';
+                        grid.appendChild(endMarker);
+                    }
+                }
             }
         }, 400); 
     }
@@ -1359,22 +1438,35 @@ class App {
     }
 
     calculateNutriScore(recipe) {
-        let score = 0; // Lower is better
-        if (recipe.tags.includes('Vegano')) score -= 2;
-        if (recipe.tags.includes('Bajo en calorías')) score -= 3;
-        if (recipe.tags.includes('Alto en proteínas')) score -= 2;
+        let score = 5; // Start with a middle score (C)
+        
+        // Positive points (Healthy)
+        if (recipe.tags.includes('Vegano') || recipe.tags.includes('Saludable') || recipe.tags.includes('Legumbres')) score -= 3;
+        if (recipe.tags.includes('Alto en proteínas') || recipe.tags.includes('Gimnasio')) score -= 2;
+        if (recipe.tags.includes('Aguacate') || recipe.tags.includes('Pescado') || recipe.tags.includes('Fibra')) score -= 2;
+        if (recipe.category === 'Desayunos' && recipe.tags.includes('Avena')) score -= 2;
+        
+        // Macro evaluation
         if (recipe.macros) {
-            if (recipe.macros.calories < 400) score -= 2;
-            if (recipe.macros.protein > 20) score -= 2;
-            if (recipe.macros.fats > 25) score += 3;
-            if (recipe.macros.calories > 700) score += 4;
+            const cal = recipe.macros.calories || 400;
+            const prot = recipe.macros.protein || 10;
+            const fat = recipe.macros.fats || 10;
+            
+            if (cal < 350) score -= 2;
+            if (cal > 750) score += 4;
+            if (prot > 25) score -= 2;
+            if (fat > 30 && !recipe.tags.includes('Grasas Buenas')) score += 3;
         }
-        if (recipe.category === 'Postres') score += 5;
 
-        if (score <= -2) return 'A';
-        if (score <= 1) return 'B';
-        if (score <= 4) return 'C';
-        if (score <= 7) return 'D';
+        // Category adjustments
+        if (recipe.category === 'Postres') score += 6;
+        if (recipe.category === 'Snacks' && recipe.macros?.calories > 300) score += 2;
+
+        // Final Mapping
+        if (score <= 1) return 'A';
+        if (score <= 3) return 'B';
+        if (score <= 6) return 'C';
+        if (score <= 9) return 'D';
         return 'E';
     }
 
@@ -1492,6 +1584,25 @@ class App {
                     ${mockRecipes.filter(r => r.tags.includes('Gourmet')).slice(0, 4).map((recipe, index) => this.createRecipeCard(recipe, index)).join('')}
                 </div>
             </section>
+
+            ${this.pantry && this.pantry.length > 0 ? `
+            <section class="reveal-on-scroll animated-gradient-border" style="max-width:1400px; margin: 0 auto 8rem; padding: 3rem; background: var(--card-bg);">
+                <div style="text-align:center; margin-bottom:3rem;">
+                    <span class="goal-badge" style="background:var(--secondary-color); color:white; margin-bottom:1rem; display:inline-block;">Basado en tu despensa</span>
+                    <h2 style="font-size:2.8rem;">Cocina con lo que tienes</h2>
+                    <p style="color:var(--text-light);">Hemos analizado tus ingredientes (${this.pantry.join(', ')}) y estas recetas te van como anillo al dedo.</p>
+                </div>
+                <div class="recipes-grid">
+                    ${mockRecipes
+                        .map(r => ({ recipe: r, match: this.calculateMatch(r.ingredients) }))
+                        .filter(item => item.match > 20)
+                        .sort((a, b) => b.match - a.match)
+                        .slice(0, 4)
+                        .map((item, index) => this.createRecipeCard(item.recipe, index))
+                        .join('') || '<p style="grid-column:1/-1; text-align:center; color:var(--text-light);">Añade más ingredientes a tu despensa para ver sugerencias personalizadas.</p>'}
+                </div>
+            </section>
+            ` : ''}
         `;
     }
 
@@ -1605,6 +1716,17 @@ class App {
                     </div>
                 </div>
 
+                <div class="chef-tip glass-card" style="margin-top: 2rem; border-left: 4px solid var(--secondary-color); padding: 1.5rem; background: var(--adaptation-bg); position:relative; overflow:hidden;">
+                    <div style="position:absolute; bottom:-20px; right:-20px; opacity:0.1; font-size:8rem; transform:rotate(-15deg); pointer-events:none;"><i class="fa-solid fa-utensils"></i></div>
+                    <div style="display:flex; align-items:center; gap:0.8rem; margin-bottom:0.8rem; color:var(--secondary-color); font-weight:700;">
+                        <i class="fa-solid fa-hat-chef" style="font-size:1.4rem;"></i>
+                        <span>Consejo del Chef</span>
+                    </div>
+                    <p style="font-style: italic; color: var(--text-dark); line-height:1.6; position:relative; z-index:1;">
+                        "${recipe.chefTip || 'Para un sabor más auténtico, te recomiendo usar ingredientes de temporada y un toque de hierbas frescas justo antes de servir. ¡Disfruta del proceso tanto como del resultado!'}"
+                    </p>
+                </div>
+
                 ${recipe.macros ? `
                 <div class="macros-editorial glass-effect">
                     <div class="macro-stat">
@@ -1683,6 +1805,28 @@ class App {
                         <div class="ingredients-list-alt">
                             ${ingredientsHtml}
                         </div>
+
+                        ${recipe.allergens && recipe.allergens.length > 0 ? `
+                        <div class="allergens-editorial glass-card" style="margin-top: 2rem; padding: 1.5rem; background: rgba(0,0,0,0.02); border: 1px dashed var(--border-color);">
+                            <h4 style="margin-bottom: 0.8rem; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-light);">
+                                <i class="fa-solid fa-triangle-exclamation"></i> Alérgenos
+                            </h4>
+                            <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+                                ${recipe.allergens.map(a => `<span class="allergen-tag" style="background:var(--card-bg); padding:0.4rem 0.8rem; border-radius:var(--radius-sm); font-size:0.85rem; border:1px solid var(--border-color);">${a}</span>`).join('')}
+                            </div>
+                        </div>
+                        ` : ''}
+
+                        ${recipe.adaptation ? `
+                        <div class="adaptation-editorial glass-card" style="margin-top: 2rem; padding: 2rem; background: var(--adaptation-bg); border-left: 4px solid var(--primary-color);">
+                            <h3 style="margin-bottom: 0.8rem; color: var(--primary-color);">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> ${recipe.adaptation.title}
+                            </h3>
+                            <p style="color: var(--text-dark); line-height: 1.6; font-style: italic;">
+                                ${recipe.adaptation.text}
+                            </p>
+                        </div>
+                        ` : ''}
                         
                     </section>
 
@@ -1779,8 +1923,8 @@ class App {
                         ${Array(5).fill(0).map((_, i) => `<i class="fa-${i < op.rating ? 'solid' : 'regular'} fa-star"></i>`).join('')}
                     </div>
                 </div>
-                <h4 style="margin-bottom:0.5rem; font-weight:700;">${op.title || 'Sin título'}</h4>
-                <p style="color:var(--text-dark); line-height:1.6;">${op.text}</p>
+                <h4 style="margin-bottom:0.5rem; font-weight:700;">${this.escapeHTML(op.title || 'Sin título')}</h4>
+                <p style="color:var(--text-dark); line-height:1.6;">${this.escapeHTML(op.text)}</p>
             </div>
         `).join('');
     }
@@ -1876,122 +2020,6 @@ class App {
         }
     }
 
-    renderOpinions(recipeId) {
-        const recipeOpinions = this.opinions[recipeId] || [
-            { user: 'Alex Lopez', avatar: 'AL', text: '¡Me ha quedado espectacular! El toque de especias es clave.', color: '#e67e22', likes: 24 },
-            { user: 'Marta Ruiz', avatar: 'MR', text: 'Muy fácil de seguir, incluso para alguien que no cocina mucho.', color: '#27ae60', likes: 12 }
-        ];
-
-        return `
-            <div class="community-grid">
-                ${recipeOpinions.map(op => `
-                    <div class="community-post">
-                        <div class="post-header">
-                            <div class="post-avatar" style="background:${op.color || '#d35400'}; color:white; display:flex; align-items:center; justify-content:center; font-weight:bold;">${op.avatar || 'U'}</div>
-                            <div style="display:flex; flex-direction:column;">
-                                <span class="post-user">${op.user} ${op.verified ? '<i class="fa-solid fa-circle-check" style="color:#3498db; font-size:0.8rem; margin-left:4px;" title="Cocinero Verificado"></i>' : ''}</span>
-                                <small style="font-size:0.7rem; color:var(--text-light);">${op.date || 'Recientemente'}</small>
-                            </div>
-                        </div>
-                        <div class="post-footer">
-                            <div style="color:#f1c40f; font-size:0.8rem; margin-bottom:0.4rem;">
-                                ${Array(5).fill(0).map((_, i) => `<i class="fa-${i < (op.rating || 5) ? 'solid' : 'regular'} fa-star"></i>`).join('')}
-                            </div>
-                            <div class="post-caption">"${op.text}"</div>
-                            <div class="post-actions" style="margin-top:1rem; font-size:0.9rem;">
-                                <i class="fa-solid fa-heart" style="color:#e74c3c;"></i> ${op.likes || 0} 
-                                <i class="fa-regular fa-comment" style="margin-left:1rem;"></i> 0
-                            </div>
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-        `;
-    }
-
-    showCommentForm(recipeId) {
-        const modal = document.createElement('div');
-        modal.className = 'modal-overlay active';
-        modal.id = 'comment-modal';
-        
-        modal.innerHTML = `
-            <div class="auth-card" style="max-width:500px; padding:2.5rem;">
-                <h2 style="font-family:var(--font-heading); margin-bottom:1rem;">Comparte tu opinión</h2>
-                <p style="color:var(--text-light); margin-bottom:2rem;">Cuéntales a otros qué tal te ha salido la receta.</p>
-                
-                <div style="margin-bottom:1.5rem;">
-                    <label style="display:block; margin-bottom:0.5rem; font-weight:bold;">Tu Nombre</label>
-                    <input type="text" id="comment-user" placeholder="Ej: Cocinilla Experto" style="width:100%; padding:0.8rem; border:1px solid var(--border-color); border-radius:var(--radius-sm);">
-                </div>
-
-                <div style="margin-bottom:1.5rem; display:flex; align-items:center; gap:1rem;">
-                    <label style="font-weight:bold;">Tu Valoración:</label>
-                    <div id="star-rating" style="color:#f1c40f; font-size:1.5rem; cursor:pointer;">
-                        <i class="fa-solid fa-star" onclick="app.setRating(1)"></i>
-                        <i class="fa-regular fa-star" onclick="app.setRating(2)"></i>
-                        <i class="fa-regular fa-star" onclick="app.setRating(3)"></i>
-                        <i class="fa-regular fa-star" onclick="app.setRating(4)"></i>
-                        <i class="fa-regular fa-star" onclick="app.setRating(5)"></i>
-                    </div>
-                </div>
-
-                <div style="margin-bottom:2rem;">
-                    <label style="display:block; margin-bottom:0.5rem; font-weight:bold;">Tu Experiencia</label>
-                    <textarea id="comment-text" placeholder="¿Qué te ha parecido? ¿Algún truco?" style="width:100%; height:120px; padding:0.8rem; border:1px solid var(--border-color); border-radius:var(--radius-sm); resize:none;"></textarea>
-                </div>
-
-                <div style="display:flex; gap:1rem;">
-                    <button class="btn-action" style="flex:1;" onclick="app.submitOpinion('${recipeId}')">Publicar</button>
-                    <button class="btn-action" style="flex:1; background:#eee; color:#333; border:none;" onclick="document.getElementById('comment-modal').remove()">Cancelar</button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-    }
-
-    submitOpinion(recipeId) {
-        const user = document.getElementById('comment-user').value;
-        const text = document.getElementById('comment-text').value;
-
-        if (!user || !text) {
-            this.showToast('Por favor, rellena todos los campos', 'fa-triangle-exclamation');
-            return;
-        }
-
-        if (!this.opinions[recipeId]) this.opinions[recipeId] = [];
-        
-        const newOpinion = {
-            user: user,
-            avatar: user.substring(0, 2).toUpperCase(),
-            text: text,
-            rating: this.tempRating || 5,
-            color: '#d35400',
-            likes: 0
-        };
-
-        this.opinions[recipeId].push(newOpinion);
-        localStorage.setItem('cuchara_opinions', JSON.stringify(this.opinions));
-
-        document.getElementById('comment-modal').remove();
-        this.showToast('¡Gracias por tu opinión!', 'fa-comment-check');
-        
-        // Refresh opinions container
-        const container = document.getElementById('opinions-container');
-        if (container) container.innerHTML = this.renderOpinions(recipeId);
-    }
-
-    setRating(val) {
-        this.tempRating = val;
-        const stars = document.querySelectorAll('#star-rating i');
-        stars.forEach((star, i) => {
-            if (i < val) {
-                star.classList.replace('fa-regular', 'fa-solid');
-            } else {
-                star.classList.replace('fa-solid', 'fa-regular');
-            }
-        });
-    }
-
     startVoiceSearch() {
         if (!this.recognition) {
             this.showToast('Búsqueda por voz no disponible en este navegador', 'fa-circle-exclamation');
@@ -2068,17 +2096,17 @@ class App {
                     <div class="planner-card" onclick="app.generateMealPlan('perder', event)">
                         <i class="fa-solid fa-weight-scale"></i>
                         <h3>Perder Peso</h3>
-                        <p>Déficit calórico, recetas ligeras y saciantes.</p>
+                        <p>Platos ligeros y deliciosos para sentirte deshinchado y con energía.</p>
                     </div>
                     <div class="planner-card" onclick="app.generateMealPlan('mantener', event)">
                         <i class="fa-solid fa-heart-pulse"></i>
                         <h3>Mantenerse</h3>
-                        <p>Equilibrio perfecto de macronutrientes.</p>
+                        <p>El equilibrio perfecto para los que aman comer bien y cuidarse.</p>
                     </div>
                     <div class="planner-card" onclick="app.generateMealPlan('ganar', event)">
                         <i class="fa-solid fa-dumbbell"></i>
                         <h3>Ganar Masa</h3>
-                        <p>Superávit calórico, alto en proteínas y energía.</p>
+                        <p>Recetas potentes para nutrir tus músculos y darte fuerza extra.</p>
                     </div>
                 </div>
 
@@ -2099,42 +2127,63 @@ class App {
             this.showToast('Objetivo actualizado en tu nube', 'fa-cloud-arrow-up');
         }
 
-        let breakfast, lunch, dinner, snack;
-
-        if (goal === 'perder') {
-            breakfast = mockRecipes.find(r => r.category === 'Desayunos' && r.macros && r.macros.calories <= 350);
-            lunch = mockRecipes.find(r => r.category === 'Comidas' && r.macros && r.macros.calories <= 450);
-            dinner = mockRecipes.find(r => r.category === 'Cenas' && r.macros && r.macros.calories <= 300);
-            snack = mockRecipes.find(r => r.id === 'hummus-casero' || (r.category === 'Snacks' && r.macros && r.macros.calories <= 250));
-        } else if (goal === 'ganar') {
-            breakfast = mockRecipes.find(r => r.id === 'batido-ganador');
-            lunch = mockRecipes.find(r => r.id === 'arroz-pollo-cacahuetes');
-            dinner = mockRecipes.find(r => r.category === 'Cenas' && r.macros && r.macros.calories > 500);
-            snack = mockRecipes.find(r => r.category === 'Postres' && r.macros && r.macros.calories > 300);
-        } else {
-            breakfast = mockRecipes.find(r => r.category === 'Desayunos' && r.macros && r.macros.calories > 300 && r.macros.calories <= 400);
-            lunch = mockRecipes.find(r => r.category === 'Comidas' && r.macros && r.macros.calories > 450 && r.macros.calories <= 600);
-            dinner = mockRecipes.find(r => r.category === 'Cenas' && r.macros && r.macros.calories > 300 && r.macros.calories <= 500);
-            snack = mockRecipes.find(r => r.category === 'Snacks');
-        }
-
-        const totalCalories = [breakfast, lunch, dinner, snack].reduce((acc, curr) => acc + (curr?.macros?.calories || 0), 0);
-        const totalProtein = [breakfast, lunch, dinner, snack].reduce((acc, curr) => acc + (curr?.macros?.protein || 0), 0);
-
         const container = document.getElementById('meal-plan-container');
         container.innerHTML = `
-            <div class="meal-plan-result">
-                <h2 style="text-align: center; margin-bottom: 1rem;">Tu Menú Diario Recomendado</h2>
-                <div style="text-align: center; margin-bottom: 2rem; color: var(--primary-color); font-weight: 600; font-size: 1.2rem;">
-                    Total Aprox: ${totalCalories} kcal | ${totalProtein}g Proteína
-                </div>
-                
-                ${this.createMealSlotHtml('Desayuno', breakfast)}
-                ${this.createMealSlotHtml('Comida', lunch)}
-                ${this.createMealSlotHtml('Snack', snack)}
-                ${this.createMealSlotHtml('Cena', dinner)}
+            <div style="text-align:center; padding:2rem;">
+                <div class="typing-dots"><span></span><span></span><span></span></div>
+                <p style="color:var(--text-light); margin-top:0.5rem;">Diseñando tu plan personalizado...</p>
             </div>
         `;
+
+        setTimeout(() => {
+            let meals = [];
+            for (let i = 0; i < 3; i++) {
+                let breakfast, lunch, dinner, snack;
+                if (goal === 'perder') {
+                    breakfast = mockRecipes.filter(r => r.category === 'Desayunos' && (r.macros?.calories || 0) <= 350)[i % 2];
+                    lunch = mockRecipes.filter(r => r.category === 'Comidas' && (r.macros?.calories || 0) <= 450)[i % 2];
+                    dinner = mockRecipes.filter(r => r.category === 'Cenas' && (r.macros?.calories || 0) <= 350)[i % 2];
+                    snack = mockRecipes.filter(r => r.category === 'Snacks' && (r.macros?.calories || 0) <= 250)[i % 2];
+                } else if (goal === 'ganar') {
+                    breakfast = mockRecipes.filter(r => r.tags.includes('Ganar peso'))[i % 2] || mockRecipes[0];
+                    lunch = mockRecipes.filter(r => r.category === 'Comidas' && (r.macros?.calories || 0) > 500)[i % 2];
+                    dinner = mockRecipes.filter(r => r.category === 'Cenas' && (r.macros?.protein || 0) > 25)[i % 2];
+                    snack = mockRecipes.filter(r => r.category === 'Postres' && (r.macros?.calories || 0) > 300)[i % 2];
+                } else {
+                    breakfast = mockRecipes.filter(r => r.category === 'Desayunos')[i % 3];
+                    lunch = mockRecipes.filter(r => r.category === 'Comidas')[i % 3];
+                    dinner = mockRecipes.filter(r => r.category === 'Cenas')[i % 3];
+                    snack = mockRecipes.filter(r => r.category === 'Snacks')[i % 3];
+                }
+                meals.push({ day: `Día ${i+1}`, breakfast, lunch, dinner, snack });
+            }
+
+            container.innerHTML = `
+                <div class="meal-plan-result" style="animation: fadeInUp 0.6s ease;">
+                    <h2 style="text-align: center; margin-bottom: 2rem; font-family:var(--font-heading);">Tu Guía de 3 Días</h2>
+                    
+                    <div style="display:flex; gap:1rem; overflow-x:auto; padding-bottom:1rem; margin-bottom:2rem; justify-content:center;">
+                        ${meals.map((m, idx) => `
+                            <button class="btn-action ${idx === 0 ? 'active' : ''}" onclick="document.querySelectorAll('.day-view').forEach(v => v.style.display='none'); document.getElementById('day-${idx}').style.display='block'; document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active')); this.classList.add('active');" class="day-tab">
+                                ${m.day}
+                            </button>
+                        `).join('')}
+                    </div>
+
+                    ${meals.map((m, idx) => `
+                        <div id="day-${idx}" class="day-view" style="display: ${idx === 0 ? 'block' : 'none'}; animation: fadeIn 0.4s ease;">
+                            <div style="text-align: center; margin-bottom: 2rem; color: var(--primary-color); font-weight: 600; font-size: 1.1rem;">
+                                <i class="fa-solid fa-fire"></i> Total estimado: ~${Math.round((m.breakfast?.macros?.calories || 0) + (m.lunch?.macros?.calories || 0) + (m.dinner?.macros?.calories || 0) + (m.snack?.macros?.calories || 0))} kcal
+                            </div>
+                            ${this.createMealSlotHtml('Desayuno', m.breakfast)}
+                            ${this.createMealSlotHtml('Comida', m.lunch)}
+                            ${this.createMealSlotHtml('Snack / Merienda', m.snack)}
+                            ${this.createMealSlotHtml('Cena', m.dinner)}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }, 1000);
     }
 
     createMealSlotHtml(mealName, recipe) {
@@ -2643,7 +2692,6 @@ class App {
                 </div>
             `;
             document.body.appendChild(panel);
-            this.activeTimers = [];
         }
         panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
     }
@@ -3078,14 +3126,14 @@ class App {
         if (goal === 'perder') {
             targetCalories -= 500;
             filterTag = "Perder peso";
-            recommendationText = "Para perder grasa saludablemente, hemos calculado un déficit calórico. Con tu nivel de actividad, necesitas unas <strong>" + Math.round(targetCalories) + " kcal/día</strong>. Te recomendaremos recetas altas en proteínas para mantener la masa muscular y saciarte.";
+            recommendationText = "¡Vamos a por ello! Hemos diseñado un plan suave para que pierdas grasa sin pasar hambre. Con tu ritmo actual, te sugerimos unas <strong>" + Math.round(targetCalories) + " kcal/día</strong>. Te encantarán nuestras recetas ricas en proteínas, ¡te mantendrán saciado y con energía!";
         } else if (goal === 'ganar') {
             targetCalories += 400;
             filterTag = "Ganar peso";
-            recommendationText = "Para ganar masa muscular, hemos calculado un superávit. Con tu nivel de actividad, apunta a <strong>" + Math.round(targetCalories) + " kcal/día</strong>. Si vas al gimnasio regularmente, estas recetas hipercalóricas te darán la energía necesaria para la hipertrofia.";
+            recommendationText = "¡Es hora de construir esa fuerza! Para ganar masa muscular de forma limpia, apunta a unas <strong>" + Math.round(targetCalories) + " kcal/día</strong>. He seleccionado platos con un extra de energía y proteínas para que tus entrenamientos rindan al máximo.";
         } else {
             filterTag = "Para todos";
-            recommendationText = "Tu objetivo es mantener tu estado actual. Te recomendamos un consumo de <strong>" + Math.round(targetCalories) + " kcal/día</strong>. Te ofreceremos comidas equilibradas y nutritivas para sustentar tus actividades diarias y entrenamientos.";
+            recommendationText = "¡Estás en un gran punto! Tu objetivo es mantener ese equilibrio que ya tienes. Disfruta de unas <strong>" + Math.round(targetCalories) + " kcal/día</strong> con recetas variadas y nutritivas que te harán sentirte genial cada día.";
         }
 
         let breakfast, lunch, dinner, snack;
