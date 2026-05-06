@@ -14,8 +14,8 @@ const firebaseConfig = {
 };
 
 /**
- * Cuchara & Sabor - Motor Principal v2.1.0 Premium
- * Estabilidad, Animaciones Fluidas y Sincronización Real
+ * Cuchara & Sabor - Motor Principal v2.5.0 Premium (Human & Precision Edition)
+ * Estabilidad, Animaciones Fluidas, Human-Copy y Auditoría Nutricional 100%
  */
 class App {
     constructor() {
@@ -61,7 +61,6 @@ class App {
         this.activeFilters = {
             category: [], time: [], diet: [], allergen: [], searchQuery: '', goal: [], sort: 'default'
         };
-        this.activeTimers = [];
         this.listenToAuth();
         this.listenToOpinions();
         
@@ -152,13 +151,6 @@ class App {
             }
         });
     }
-    escapeHTML(str) {
-        if (!str) return "";
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
-    }
-
     init() {
         // Inicializar Tema (Oscuro/Claro)
         this.initTheme();
@@ -185,13 +177,6 @@ class App {
             const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
             const scrolledPercent = (winScroll / height) * 100;
             if (scrollBar) scrollBar.style.width = scrolledPercent + "%";
-
-            // Botón Back to Top
-            const backToTop = document.getElementById('back-to-top');
-            if (backToTop) {
-                if (winScroll > 600) backToTop.classList.add('visible');
-                else backToTop.classList.remove('visible');
-            }
 
             // Revelar elementos al hacer scroll
             document.querySelectorAll('.reveal-on-scroll').forEach(el => {
@@ -711,20 +696,26 @@ class App {
         this.showToast(`${addedCount} ingredientes añadidos`, 'fa-cart-plus');
     }
 
+    updateShoppingBadge() {
+        const badge = document.getElementById('shopping-badge');
+        if (!badge) return;
+        const count = this.shoppingList.length;
+        if (count > 0) {
+            badge.textContent = count;
+            badge.style.display = 'flex';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+
+
     removeFromShoppingList(index) {
         if (!this.checkAuth()) return;
         this.shoppingList.splice(index, 1);
+        localStorage.setItem(`cuchara_shop_${this.activeUser.username}`, JSON.stringify(this.shoppingList));
         this.updateShoppingBadge();
-        
-        if (this.activeUser && !this.isDemoMode) {
-            updateDoc(doc(this.db, "users", this.activeUser.uid), {
-                shoppingList: this.shoppingList
-            });
-        }
-        
-        // Re-render list
         this.renderShoppingList();
-        this.showToast('Ingrediente eliminado', 'fa-trash');
     }
 
     showToast(message, icon) {
@@ -889,12 +880,7 @@ class App {
                     this.updateSchema({});
                     break;
                 case 'recipe':
-                    const exists = mockRecipes.find(r => r.id === params);
-                    if (exists) {
-                        this.renderRecipe(params);
-                    } else {
-                        this.renderNotFound('Receta no encontrada');
-                    }
+                    this.renderRecipe(params);
                     break;
                 case 'about':
                     this.renderAbout();
@@ -905,7 +891,7 @@ class App {
                     this.updateSchema({});
                     break;
                 default:
-                    this.renderNotFound('Página no encontrada');
+                    this.renderHome();
             }
             
             window.scrollTo(0, 0);
@@ -913,35 +899,6 @@ class App {
             this.contentDiv.classList.add('route-ready');
             setTimeout(() => this.contentDiv.classList.remove('route-ready'), 600);
         }, 300);
-    }
-
-    renderNotFound(message) {
-        this.contentDiv.innerHTML = `
-            <div class="page-container" style="text-align:center; padding:5rem 2rem; animation:fadeInUp 0.6s ease;">
-                <div style="font-size:8rem; color:var(--primary-color); margin-bottom:2rem; opacity:0.2;">
-                    <i class="fa-solid fa-utensils-slash"></i>
-                </div>
-                <h1 style="font-size:3rem; margin-bottom:1rem; font-family:var(--font-heading);">¡Ups! Plato no encontrado</h1>
-                <p style="color:var(--text-light); font-size:1.2rem; margin-bottom:3rem;">${message}. Parece que el chef ha cambiado la carta hoy.</p>
-                
-                <div style="margin-bottom:4rem;">
-                    <button class="btn-action active" onclick="app.navigate('home')" style="padding:1rem 2.5rem; font-size:1.1rem;">
-                        <i class="fa-solid fa-house"></i> Volver a la cocina
-                    </button>
-                    <button class="btn-action" onclick="app.surpriseMe()" style="padding:1rem 2.5rem; font-size:1.1rem; margin-left:1rem;">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> Sorpréndeme
-                    </button>
-                </div>
-
-                <div style="max-width:1200px; margin:0 auto;">
-                    <h3 style="margin-bottom:2rem; color:var(--text-dark);">Quizás te interese esto:</h3>
-                    <div class="recipes-grid">
-                        ${mockRecipes.slice(0, 4).map((r, i) => this.createRecipeCard(r, i)).join('')}
-                    </div>
-                </div>
-            </div>
-        `;
-        this.updateSchema({});
     }
 
     updateSchema(data) {
@@ -1294,17 +1251,7 @@ class App {
 
             const loadMoreBtn = document.getElementById('load-more-btn');
             if (loadMoreBtn) {
-                if (filtered.length > this.recipesToShow) {
-                    loadMoreBtn.style.display = 'inline-block';
-                } else {
-                    loadMoreBtn.style.display = 'none';
-                    if (filtered.length > 4) {
-                        const endMarker = document.createElement('div');
-                        endMarker.className = 'end-of-list reveal-on-scroll';
-                        endMarker.innerHTML = '<i class="fa-solid fa-check-double"></i> Has llegado al final de nuestra selección gourmet';
-                        grid.appendChild(endMarker);
-                    }
-                }
+                loadMoreBtn.style.display = filtered.length > this.recipesToShow ? 'inline-block' : 'none';
             }
         }, 400); 
     }
@@ -1923,8 +1870,8 @@ class App {
                         ${Array(5).fill(0).map((_, i) => `<i class="fa-${i < op.rating ? 'solid' : 'regular'} fa-star"></i>`).join('')}
                     </div>
                 </div>
-                <h4 style="margin-bottom:0.5rem; font-weight:700;">${this.escapeHTML(op.title || 'Sin título')}</h4>
-                <p style="color:var(--text-dark); line-height:1.6;">${this.escapeHTML(op.text)}</p>
+                <h4 style="margin-bottom:0.5rem; font-weight:700;">${op.title || 'Sin título'}</h4>
+                <p style="color:var(--text-dark); line-height:1.6;">${op.text}</p>
             </div>
         `).join('');
     }
@@ -2018,6 +1965,122 @@ class App {
             btn.disabled = false;
             btn.innerHTML = 'Publicar Reseña';
         }
+    }
+
+    renderOpinions(recipeId) {
+        const recipeOpinions = this.opinions[recipeId] || [
+            { user: 'Alex Lopez', avatar: 'AL', text: '¡Me ha quedado espectacular! El toque de especias es clave.', color: '#e67e22', likes: 24 },
+            { user: 'Marta Ruiz', avatar: 'MR', text: 'Muy fácil de seguir, incluso para alguien que no cocina mucho.', color: '#27ae60', likes: 12 }
+        ];
+
+        return `
+            <div class="community-grid">
+                ${recipeOpinions.map(op => `
+                    <div class="community-post">
+                        <div class="post-header">
+                            <div class="post-avatar" style="background:${op.color || '#d35400'}; color:white; display:flex; align-items:center; justify-content:center; font-weight:bold;">${op.avatar || 'U'}</div>
+                            <div style="display:flex; flex-direction:column;">
+                                <span class="post-user">${op.user} ${op.verified ? '<i class="fa-solid fa-circle-check" style="color:#3498db; font-size:0.8rem; margin-left:4px;" title="Cocinero Verificado"></i>' : ''}</span>
+                                <small style="font-size:0.7rem; color:var(--text-light);">${op.date || 'Recientemente'}</small>
+                            </div>
+                        </div>
+                        <div class="post-footer">
+                            <div style="color:#f1c40f; font-size:0.8rem; margin-bottom:0.4rem;">
+                                ${Array(5).fill(0).map((_, i) => `<i class="fa-${i < (op.rating || 5) ? 'solid' : 'regular'} fa-star"></i>`).join('')}
+                            </div>
+                            <div class="post-caption">"${op.text}"</div>
+                            <div class="post-actions" style="margin-top:1rem; font-size:0.9rem;">
+                                <i class="fa-solid fa-heart" style="color:#e74c3c;"></i> ${op.likes || 0} 
+                                <i class="fa-regular fa-comment" style="margin-left:1rem;"></i> 0
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    showCommentForm(recipeId) {
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay active';
+        modal.id = 'comment-modal';
+        
+        modal.innerHTML = `
+            <div class="auth-card" style="max-width:500px; padding:2.5rem;">
+                <h2 style="font-family:var(--font-heading); margin-bottom:1rem;">Comparte tu opinión</h2>
+                <p style="color:var(--text-light); margin-bottom:2rem;">Cuéntales a otros qué tal te ha salido la receta.</p>
+                
+                <div style="margin-bottom:1.5rem;">
+                    <label style="display:block; margin-bottom:0.5rem; font-weight:bold;">Tu Nombre</label>
+                    <input type="text" id="comment-user" placeholder="Ej: Cocinilla Experto" style="width:100%; padding:0.8rem; border:1px solid var(--border-color); border-radius:var(--radius-sm);">
+                </div>
+
+                <div style="margin-bottom:1.5rem; display:flex; align-items:center; gap:1rem;">
+                    <label style="font-weight:bold;">Tu Valoración:</label>
+                    <div id="star-rating" style="color:#f1c40f; font-size:1.5rem; cursor:pointer;">
+                        <i class="fa-solid fa-star" onclick="app.setRating(1)"></i>
+                        <i class="fa-regular fa-star" onclick="app.setRating(2)"></i>
+                        <i class="fa-regular fa-star" onclick="app.setRating(3)"></i>
+                        <i class="fa-regular fa-star" onclick="app.setRating(4)"></i>
+                        <i class="fa-regular fa-star" onclick="app.setRating(5)"></i>
+                    </div>
+                </div>
+
+                <div style="margin-bottom:2rem;">
+                    <label style="display:block; margin-bottom:0.5rem; font-weight:bold;">Tu Experiencia</label>
+                    <textarea id="comment-text" placeholder="¿Qué te ha parecido? ¿Algún truco?" style="width:100%; height:120px; padding:0.8rem; border:1px solid var(--border-color); border-radius:var(--radius-sm); resize:none;"></textarea>
+                </div>
+
+                <div style="display:flex; gap:1rem;">
+                    <button class="btn-action" style="flex:1;" onclick="app.submitOpinion('${recipeId}')">Publicar</button>
+                    <button class="btn-action" style="flex:1; background:#eee; color:#333; border:none;" onclick="document.getElementById('comment-modal').remove()">Cancelar</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    submitOpinion(recipeId) {
+        const user = document.getElementById('comment-user').value;
+        const text = document.getElementById('comment-text').value;
+
+        if (!user || !text) {
+            this.showToast('Por favor, rellena todos los campos', 'fa-triangle-exclamation');
+            return;
+        }
+
+        if (!this.opinions[recipeId]) this.opinions[recipeId] = [];
+        
+        const newOpinion = {
+            user: user,
+            avatar: user.substring(0, 2).toUpperCase(),
+            text: text,
+            rating: this.tempRating || 5,
+            color: '#d35400',
+            likes: 0
+        };
+
+        this.opinions[recipeId].push(newOpinion);
+        localStorage.setItem('cuchara_opinions', JSON.stringify(this.opinions));
+
+        document.getElementById('comment-modal').remove();
+        this.showToast('¡Gracias por tu opinión!', 'fa-comment-check');
+        
+        // Refresh opinions container
+        const container = document.getElementById('opinions-container');
+        if (container) container.innerHTML = this.renderOpinions(recipeId);
+    }
+
+    setRating(val) {
+        this.tempRating = val;
+        const stars = document.querySelectorAll('#star-rating i');
+        stars.forEach((star, i) => {
+            if (i < val) {
+                star.classList.replace('fa-regular', 'fa-solid');
+            } else {
+                star.classList.replace('fa-solid', 'fa-regular');
+            }
+        });
     }
 
     startVoiceSearch() {
@@ -2692,6 +2755,7 @@ class App {
                 </div>
             `;
             document.body.appendChild(panel);
+            this.activeTimers = [];
         }
         panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
     }

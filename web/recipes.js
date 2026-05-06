@@ -572,20 +572,7 @@ export const mockRecipes = [
 const cultures = ['Mexicana', 'Japonesa', 'Italiana', 'Española', 'India', 'Tailandesa', 'Francesa', 'Griega', 'Marroquí', 'China', 'Peruana', 'Venezolana', 'Americana', 'Libanesa', 'Etíope', 'Turca', 'Coreana', 'Vietnamita'];
 const categories = ['Desayunos', 'Comidas', 'Cenas', 'Snacks', 'Postres'];
 const difficulties = ['Fácil', 'Media', 'Difícil'];
-const dessertIngredients = {
-    'Bases': ['Yogur Griego', 'Chia Pudding', 'Fruta Picada', 'Avena', 'Crepe'],
-    'Toppings': ['Bayas', 'Nueces', 'Chocolate', 'Miel', 'Canela'],
-    'Macros': {
-        cal: 180, prot: 6, fat: 4, carb: 25
-    }
-};
 
-const snackIngredients = {
-    'Bases': ['Hummus de Garbanzo', 'Queso', 'Edamame', 'Frutos Secos', 'Palitos de Zanahoria'],
-    'Dips': ['Guacamole', 'Tzatziki', 'Crema de Queso', 'Tahini', 'Pesto']
-};
-
-const ingredientsPool = {
     'Proteínas': [
         { name: 'Salmón', cal: 208, prot: 20, fat: 13, carb: 0, allergens: ['Pescado'] },
         { name: 'Tofu', cal: 76, prot: 8, fat: 4.8, carb: 1.9, allergens: ['Soja'] },
@@ -605,15 +592,6 @@ const ingredientsPool = {
         { name: 'Pan Integral', cal: 247, carb: 41, prot: 13, fat: 3.4, allergens: ['Gluten'] },
         { name: 'Boniato', cal: 86, carb: 20, prot: 1.6, fat: 0.1, allergens: [] },
         { name: 'Quinoa', cal: 120, carb: 21, prot: 4.4, fat: 1.9, allergens: [] }
-    ],
-    'Sabor': [
-        'con toques cítricos y jengibre',
-        'con reducción de balsámico y romero',
-        'con especias orientales y cilantro',
-        'al estilo mediterráneo con olivas',
-        'con una costra de frutos secos',
-        'con salsa de soja y sésamo',
-        'con crema de curry y leche de coco'
     ]
 };
 
