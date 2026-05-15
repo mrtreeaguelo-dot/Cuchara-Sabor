@@ -573,6 +573,7 @@ const cultures = ['Mexicana', 'Japonesa', 'Italiana', 'Española', 'India', 'Tai
 const categories = ['Desayunos', 'Comidas', 'Cenas', 'Snacks', 'Postres'];
 const difficulties = ['Fácil', 'Media', 'Difícil'];
 
+const ingredientsPool = {
     'Proteínas': [
         { name: 'Salmón', cal: 208, prot: 20, fat: 13, carb: 0, allergens: ['Pescado'] },
         { name: 'Tofu', cal: 76, prot: 8, fat: 4.8, carb: 1.9, allergens: ['Soja'] },
@@ -592,7 +593,18 @@ const difficulties = ['Fácil', 'Media', 'Difícil'];
         { name: 'Pan Integral', cal: 247, carb: 41, prot: 13, fat: 3.4, allergens: ['Gluten'] },
         { name: 'Boniato', cal: 86, carb: 20, prot: 1.6, fat: 0.1, allergens: [] },
         { name: 'Quinoa', cal: 120, carb: 21, prot: 4.4, fat: 1.9, allergens: [] }
-    ]
+    ],
+    'Sabor': ['Aceite de oliva', 'Limón', 'Salsa de soja', 'Curry', 'Cilantro', 'Albahaca', 'Queso', 'Miel', 'Cacahuete', 'Pimentón']
+};
+
+const dessertIngredients = {
+    'Bases': ['Chocolate', 'Yogur', 'Avena', 'Frutas del Bosque', 'Manzana', 'Plátano', 'Mascarpone', 'Hojaldre'],
+    'Toppings': ['Miel', 'Canela', 'Vainilla', 'Nueces', 'Almendras', 'Cacao', 'Sirope de Arce', 'Menta']
+};
+
+const snackIngredients = {
+    'Bases': ['Garbanzos', 'Frutos Secos', 'Queso', 'Maíz', 'Edamame', 'Zanahoria', 'Pepino', 'Nachos'],
+    'Dips': ['Hummus', 'Guacamole', 'Tzatziki', 'Salsa Picante', 'Crema de Queso']
 };
 
 const styles = ['Crujiente', 'Braiseado', 'al Horno', 'Salteado', 'Marinado', 'al Vapor', 'Rústico', 'Imperial', 'Zen', 'Vibrante'];

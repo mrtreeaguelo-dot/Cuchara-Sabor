@@ -57,38 +57,68 @@
         <i class="fa-solid fa-cloud-showers-heavy"></i> Estás trabajando sin conexión. Algunas funciones pueden no estar disponibles.
     </div>
 
-    <!-- ChefiBot Panel -->
+    <!-- GastroMente Panel -->
     <div id="chefibot-modal" class="chefibot-panel glass-effect">
-        <div style="position:absolute; bottom:-40px; left:-40px; opacity:0.1; font-size:12rem; color:var(--primary-color); pointer-events:none; transform:rotate(-15deg);"><i class="fa-solid fa-robot"></i></div>
+        <div style="position:absolute; bottom:-40px; left:-40px; opacity:0.06; font-size:12rem; color:var(--primary-color); pointer-events:none; transform:rotate(-15deg);"><i class="fa-solid fa-hat-wizard"></i></div>
         <div class="chefibot-header">
-            <h3 style="margin:0;"><i class="fa-solid fa-robot"></i> ChefiBot <span class="chefibot-badge">AI Assistant</span></h3>
-            <button onclick="app.toggleChefibot()" aria-label="Cerrar ChefiBot"><i class="fa-solid fa-xmark"></i></button>
+            <h3 style="margin:0;"><i class="fa-solid fa-hat-wizard"></i> GastroMente <span class="chefibot-badge">Companion</span></h3>
+            <button onclick="app.toggleChefibot()" aria-label="Cerrar GastroMente"><i class="fa-solid fa-xmark"></i></button>
         </div>
-        <div class="chefibot-body" style="position:relative; z-index:5;">
-            <p class="chefibot-intro">¡Hola! Soy tu asistente culinario. ¿Qué ingredientes tienes hoy o qué objetivo buscas?</p>
+        <div class="chefibot-body" id="gastromente-body" style="position:relative; z-index:5; display:flex; flex-direction:column; gap:0;">
             
-            <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:1.5rem;">
-                <button class="tag glass-effect" onclick="document.getElementById('chefi-ing').value='aguacate, tomate'; app.askChefibot()" style="cursor:pointer; border:1px solid var(--primary-color); color:var(--primary-color); font-size:0.75rem;">💡 Sugerencia rápida</button>
-                <button class="tag glass-effect" onclick="app.surpriseMe(); app.toggleChefibot()" style="cursor:pointer; border:1px solid var(--accent-color); color:var(--accent-color); font-size:0.75rem;">🎲 Sorpréndeme</button>
+            <!-- Chat Messages Area -->
+            <div id="gm-chat" class="gm-chat-area" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:0.8rem; padding-bottom:1rem; max-height:360px;">
+                <!-- Bot intro message -->
+                <div class="gm-msg bot" style="animation: fadeInUp 0.4s ease;">
+                    <div class="gm-avatar"><i class="fa-solid fa-hat-wizard"></i></div>
+                    <div class="gm-bubble">
+                        <p>¡Hey! Soy <strong>GastroMente</strong>, tu compañero de cocina. 🍳</p>
+                        <p style="margin-top:0.4rem;">Antes de lanzarme a recomendar, déjame conocerte un poco:</p>
+                    </div>
+                </div>
             </div>
 
-            <div class="filter-group">
-                <label style="font-size:0.75rem; font-weight:800; color:var(--text-light); text-transform:uppercase; margin-bottom:0.4rem; display:block;">Ingredientes (separados por coma)</label>
-                <input type="text" id="chefi-ing" placeholder="ej: pollo, espinacas, arroz..." autocomplete="off">
+            <!-- Quick Mood Buttons (Phase 1) -->
+            <div id="gm-phase-listen" style="border-top:1px solid var(--border-color); padding-top:1rem;">
+                <p style="font-size:0.75rem; font-weight:800; color:var(--text-light); text-transform:uppercase; margin-bottom:0.6rem;">¿Cómo estás hoy?</p>
+                <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:1rem;">
+                    <button class="gm-mood-btn" onclick="app.gmSetMood(2)" style="border:1px solid var(--border-color); background:var(--card-bg); padding:0.5rem 0.8rem; border-radius:var(--radius-md); cursor:pointer; font-size:0.8rem; transition:var(--transition);">😴 Sin energía</button>
+                    <button class="gm-mood-btn" onclick="app.gmSetMood(5)" style="border:1px solid var(--border-color); background:var(--card-bg); padding:0.5rem 0.8rem; border-radius:var(--radius-md); cursor:pointer; font-size:0.8rem; transition:var(--transition);">😊 Normal</button>
+                    <button class="gm-mood-btn" onclick="app.gmSetMood(9)" style="border:1px solid var(--border-color); background:var(--card-bg); padding:0.5rem 0.8rem; border-radius:var(--radius-md); cursor:pointer; font-size:0.8rem; transition:var(--transition);">🔥 Con ganas</button>
+                </div>
+                
+                <div class="filter-group">
+                    <label style="font-size:0.75rem; font-weight:800; color:var(--text-light); text-transform:uppercase; margin-bottom:0.4rem; display:block;">¿Qué ingredientes tienes a mano?</label>
+                    <input type="text" id="gm-ingredients" placeholder="ej: pollo, arroz, tomate..." autocomplete="off" style="width:100%;">
+                </div>
+                <div style="display:flex; gap:0.8rem; margin-top:0.8rem;">
+                    <div class="filter-group" style="flex:1;">
+                        <label style="font-size:0.7rem; color:var(--text-light); display:block; margin-bottom:0.3rem;">⏱️ Tiempo disponible</label>
+                        <select id="gm-time" style="width:100%;">
+                            <option value="15">15 min (rápido)</option>
+                            <option value="30" selected>30 min</option>
+                            <option value="60">1 hora (sin prisa)</option>
+                        </select>
+                    </div>
+                    <div class="filter-group" style="flex:1;">
+                        <label style="font-size:0.7rem; color:var(--text-light); display:block; margin-bottom:0.3rem;">👥 Personas</label>
+                        <select id="gm-people" style="width:100%;">
+                            <option value="1">Solo yo</option>
+                            <option value="2" selected>2 personas</option>
+                            <option value="4">Familia (4+)</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="chefibot-submit" onclick="app.gmAnalyze()" style="margin-top:1rem;">
+                    <span>Encontrar mi receta perfecta</span> <i class="fa-solid fa-wand-magic-sparkles"></i>
+                </button>
+                <div style="text-align:center; margin-top:0.6rem;">
+                    <button onclick="app.gmSurprise()" style="background:none; border:none; color:var(--primary-color); cursor:pointer; font-size:0.8rem; font-weight:600;">🎲 Solo sorpréndeme</button>
+                </div>
             </div>
-            <div class="filter-group" style="margin-top:1rem;">
-                <label style="font-size:0.75rem; font-weight:800; color:var(--text-light); text-transform:uppercase; margin-bottom:0.4rem; display:block;">Tu objetivo nutricional</label>
-                <select id="chefi-goal">
-                    <option value="">Cualquier objetivo</option>
-                    <option value="Perder peso">Definición / Perder Peso</option>
-                    <option value="Ganar peso">Volumen / Ganar Masa</option>
-                    <option value="Para todos">Mantenimiento Saludable</option>
-                </select>
-            </div>
-            <button class="chefibot-submit" onclick="app.askChefibot()">
-                <span>Analizar y Recomendar</span> <i class="fa-solid fa-wand-magic-sparkles"></i>
-            </button>
-            <div id="chefi-result"></div>
+            
+            <!-- Result area -->
+            <div id="gm-result" style="display:none;"></div>
         </div>
     </div>
 
@@ -225,10 +255,10 @@
                 <div class="footer-column">
                     <h3>Secciones</h3>
                     <ul>
-                        <li><a href="#" onclick="app.navigate('explore'); return false;">Explorar Recetas</a></li>
-                        <li><a href="#" onclick="app.navigate('planner'); return false;">Plan Nutricional</a></li>
-                        <li><a href="#" onclick="app.navigate('evaluacion'); return false;">Evaluación Física</a></li>
-                        <li><a href="#" onclick="app.navigate('despensa'); return false;">Mi Despensa</a></li>
+                        <li><a href="#explore" onclick="app.navigate('explore'); return false;">Explorar Recetas</a></li>
+                        <li><a href="#planner" onclick="app.navigate('planner'); return false;">Plan Nutricional</a></li>
+                        <li><a href="#evaluacion" onclick="app.navigate('evaluacion'); return false;">Evaluación Física</a></li>
+                        <li><a href="#despensa" onclick="app.navigate('despensa'); return false;">Mi Despensa</a></li>
                     </ul>
                 </div>
                 <div class="footer-column">
@@ -254,9 +284,9 @@
         </div>
     </footer>
 
-    <!-- Floating Action Button for ChefiBot -->
-    <button class="fab-chefibot" onclick="app.toggleChefibot()" aria-label="Abrir ChefiBot" title="Preguntar a ChefiBot">
-        <i class="fa-solid fa-robot"></i>
+    <!-- Floating Action Button for GastroMente -->
+    <button class="fab-chefibot" onclick="app.toggleChefibot()" aria-label="Abrir GastroMente" title="Pregunta a GastroMente">
+        <i class="fa-solid fa-hat-wizard"></i>
         <span class="fab-pulse"></span>
     </button>
 

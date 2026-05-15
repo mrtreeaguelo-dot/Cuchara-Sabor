@@ -628,10 +628,6 @@ class App {
 
     async toggleFavorite(id, event) {
         if (event) event.stopPropagation();
-        if (!this.activeUser) {
-            this.showAuthModal('login');
-            return;
-        }
         
         const index = this.favorites.indexOf(id);
         if (index > -1) {
@@ -642,9 +638,13 @@ class App {
             this.showToast('Añadida a favoritos', 'fa-heart');
         }
 
-        await updateDoc(doc(this.db, "users", this.activeUser.uid), {
-            favorites: this.favorites
-        });
+        // Persist: Firestore if logged in, otherwise localStorage
+        if (this.activeUser && !this.isDemoMode) {
+            try {
+                await updateDoc(doc(this.db, "users", this.activeUser.uid), { favorites: this.favorites });
+            } catch(e) { console.warn('Firestore sync failed, using localStorage', e); }
+        }
+        localStorage.setItem('cuchara_favorites', JSON.stringify(this.favorites));
         
         this.updateFavoriteUI(id);
     }
@@ -671,10 +671,6 @@ class App {
 
     async addToShoppingList(recipeId, event) {
         if (event) event.stopPropagation();
-        if (!this.activeUser) {
-            this.showAuthModal('login');
-            return;
-        }
         
         const recipe = mockRecipes.find(r => r.id === recipeId);
         if (!recipe) return;
@@ -688,9 +684,13 @@ class App {
             }
         });
         
-        await updateDoc(doc(this.db, "users", this.activeUser.uid), {
-            shoppingList: this.shoppingList
-        });
+        // Persist: Firestore if logged in, otherwise localStorage
+        if (this.activeUser && !this.isDemoMode) {
+            try {
+                await updateDoc(doc(this.db, "users", this.activeUser.uid), { shoppingList: this.shoppingList });
+            } catch(e) { console.warn('Firestore sync failed, using localStorage', e); }
+        }
+        localStorage.setItem('cuchara_shopping', JSON.stringify(this.shoppingList));
         
         this.updateShoppingBadge();
         this.showToast(`${addedCount} ingredientes añadidos`, 'fa-cart-plus');
@@ -711,9 +711,8 @@ class App {
 
 
     removeFromShoppingList(index) {
-        if (!this.checkAuth()) return;
         this.shoppingList.splice(index, 1);
-        localStorage.setItem(`cuchara_shop_${this.activeUser.username}`, JSON.stringify(this.shoppingList));
+        localStorage.setItem('cuchara_shopping', JSON.stringify(this.shoppingList));
         this.updateShoppingBadge();
         this.renderShoppingList();
     }
@@ -852,12 +851,10 @@ class App {
                     this.updateSchema({});
                     break;
                 case 'favorites':
-                    if (!this.checkAuth()) return;
                     this.renderFavorites();
                     this.updateSchema({});
                     break;
                 case 'shopping':
-                    if (!this.checkAuth()) return;
                     this.renderShoppingList();
                     this.updateSchema({});
                     break;
@@ -866,7 +863,6 @@ class App {
                     this.updateSchema({});
                     break;
                 case 'despensa':
-                    if (!this.checkAuth()) return;
                     this.renderDespensa();
                     this.updateSchema({});
                     break;
@@ -1103,7 +1099,7 @@ class App {
                                 <button onclick="app.updateExploreGrid()" style="padding: 0 2rem; background: var(--primary-color); border-radius: 0 var(--radius-md) var(--radius-md) 0;">Filtrar</button>
                             </div>
                         </div>
-                    </div>
+
                         <div class="recipes-grid" id="explore-grid">
                             <!-- Rendered by updateExploreGrid() -->
                         </div>
@@ -1166,7 +1162,7 @@ class App {
                 if (this.activeFilters.searchQuery) {
                     const q = this.activeFilters.searchQuery.toLowerCase();
                     
-                    // ChefiBot Intent Logic: Map natural language to tags
+                    // GastroMente Intent Logic: Map natural language to tags
                     const intents = {
                         'ligero': ['Bajo en calorías', 'Saludable', 'Vegano'],
                         'perder peso': ['Bajo en calorías', 'Perder peso'],
@@ -1461,7 +1457,7 @@ class App {
                         <i class="fa-solid fa-sparkles"></i> Tu compañero de cocina inteligente
                     </span>
                     <h1 class="shimmer-text" style="font-size: 4.5rem; margin-bottom: 1rem;">Cuchara <em>&</em> Sabor</h1>
-                    <p style="max-width:700px; margin: 0 auto 2.5rem; font-size: 1.25rem;">Descubre recetas saludables adaptadas a tus objetivos, gestiona tu despensa y cocina con ChefiBot.</p>
+                    <p style="max-width:700px; margin: 0 auto 2.5rem; font-size: 1.25rem;">Descubre recetas saludables adaptadas a tus objetivos, gestiona tu despensa y cocina con GastroMente.</p>
                     
                     <div class="search-bar glass-effect" style="max-width: 700px; margin: 0 auto; box-shadow: var(--shadow-lg);">
                         <i class="fa-solid fa-magnifying-glass" style="margin-left:1.5rem; color:var(--text-light);"></i>
@@ -1738,13 +1734,8 @@ class App {
                 </div>
                 ` : ''}
 
-                <div class="chef-callout glass-effect">
-                    <div class="chef-icon"><i class="fa-solid fa-hat-chef"></i></div>
-                    <div class="chef-text">
-                        <strong>Tip del Chef</strong>
-                        <p>${recipe.chefTip || 'Para un sabor más profundo, tuesta ligeramente las especias secas antes de añadir los líquidos.'}</p>
-                    </div>
-                </div>
+
+
 
                 <div class="recipe-body-editorial">
                     <section class="ingredients-editorial">
@@ -2183,11 +2174,13 @@ class App {
         if(event) event.currentTarget.classList.add('active');
 
         // Sync goal to profile
-        if (this.activeUser) {
-            const mappedGoal = goal === 'perder' ? 'Perder peso' : (goal === 'ganar' ? 'Ganar peso' : 'Para todos');
-            await updateDoc(doc(this.db, "users", this.activeUser.uid), { goal: mappedGoal });
-            this.userProfile.goal = mappedGoal;
-            this.showToast('Objetivo actualizado en tu nube', 'fa-cloud-arrow-up');
+        if (this.activeUser && !this.isDemoMode) {
+            try {
+                const mappedGoal = goal === 'perder' ? 'Perder peso' : (goal === 'ganar' ? 'Ganar peso' : 'Para todos');
+                await updateDoc(doc(this.db, "users", this.activeUser.uid), { goal: mappedGoal });
+                this.userProfile.goal = mappedGoal;
+                this.showToast('Objetivo actualizado en tu nube', 'fa-cloud-arrow-up');
+            } catch(e) { console.warn('Firestore sync skipped', e); }
         }
 
         const container = document.getElementById('meal-plan-container');
@@ -2271,12 +2264,14 @@ class App {
 
 
     async clearShoppingList() {
-        if (!this.activeUser) return;
         if(confirm("¿Estás seguro de querer vaciar toda la lista?")) {
             this.shoppingList = [];
-            await updateDoc(doc(this.db, "users", this.activeUser.uid), {
-                shoppingList: []
-            });
+            if (this.activeUser && !this.isDemoMode) {
+                try {
+                    await updateDoc(doc(this.db, "users", this.activeUser.uid), { shoppingList: [] });
+                } catch(e) { console.warn('Firestore sync failed', e); }
+            }
+            localStorage.setItem('cuchara_shopping', JSON.stringify([]));
             this.updateShoppingBadge();
             this.showToast('Lista vaciada', 'fa-broom');
             this.renderShoppingList();
@@ -2939,21 +2934,42 @@ class App {
                 <div id="pantry-list">
                     ${this.pantry.length === 0 ? '<p style="text-align:center; color:var(--text-light);">Tu despensa está vacía.</p>' : pantryHtml}
                 </div>
+
+                ${this.pantry.length > 0 ? `
+                    <button onclick="app.searchByPantry()" class="chefibot-submit" style="margin-top:2rem; width:100%;">
+                        <i class="fa-solid fa-magnifying-glass"></i> <span>Buscar recetas con mi despensa</span>
+                    </button>
+                ` : ''}
             </div>
         `;
     }
 
     async addToPantry(item) {
-        if (!item.trim() || !this.activeUser) return;
+        if (!item.trim()) return;
         this.pantry.push(item.trim());
-        await updateDoc(doc(this.db, "users", this.activeUser.uid), { pantry: this.pantry });
+        
+        // Persist: Firestore if logged in, otherwise localStorage
+        if (this.activeUser && !this.isDemoMode) {
+            try {
+                await updateDoc(doc(this.db, "users", this.activeUser.uid), { pantry: this.pantry });
+            } catch(e) { console.warn('Firestore sync failed, using localStorage', e); }
+        }
+        localStorage.setItem('cuchara_pantry', JSON.stringify(this.pantry));
+        
         this.renderDespensa();
         this.showToast('Ingrediente añadido', 'fa-check');
     }
 
     async removeFromPantry(index) {
         this.pantry.splice(index, 1);
-        await updateDoc(doc(this.db, "users", this.activeUser.uid), { pantry: this.pantry });
+        
+        if (this.activeUser && !this.isDemoMode) {
+            try {
+                await updateDoc(doc(this.db, "users", this.activeUser.uid), { pantry: this.pantry });
+            } catch(e) { console.warn('Firestore sync failed, using localStorage', e); }
+        }
+        localStorage.setItem('cuchara_pantry', JSON.stringify(this.pantry));
+        
         this.renderDespensa();
     }
 
@@ -3085,24 +3101,26 @@ class App {
         const newName = document.getElementById('edit-name').value.trim();
         const newEmail = document.getElementById('edit-email').value.trim();
         
-        if (this.activeUser) {
-            await updateDoc(doc(this.db, "users", this.activeUser.uid), {
-                name: newName,
-                email: newEmail
-            });
-            this.userProfile.name = newName;
-            this.userProfile.email = newEmail;
-            this.showToast('Perfil actualizado', 'fa-user-check');
-            document.querySelector('.modal.active').remove();
-            this.renderProfile();
+        if (this.activeUser && !this.isDemoMode) {
+            try {
+                await updateDoc(doc(this.db, "users", this.activeUser.uid), {
+                    name: newName,
+                    email: newEmail
+                });
+            } catch(e) { console.warn('Firestore sync failed', e); }
         }
+        this.userProfile.name = newName;
+        this.userProfile.email = newEmail;
+        this.showToast('Perfil actualizado', 'fa-user-check');
+        document.querySelector('.modal.active').remove();
+        this.renderProfile();
     }
 
     renderEvaluation() {
         this.contentDiv.innerHTML = `
             <div class="page-container" style="max-width: 800px; margin: 0 auto; animation: fadeIn 0.4s ease;">
                 <h1 style="color:var(--primary-color); margin-bottom:0.5rem; text-align:center;"><i class="fa-solid fa-stethoscope"></i> Evaluación Física y Nutricional</h1>
-                <p style="color:var(--text-light); margin-bottom:2rem; text-align:center;">Calcula tu estado físico aproximado y obtén un plan de recomendaciones de ChefiBot.</p>
+                <p style="color:var(--text-light); margin-bottom:2rem; text-align:center;">Calcula tu estado físico aproximado y obtén un plan de recomendaciones de GastroMente.</p>
                 
                 <div class="form-container" style="background:var(--card-bg); padding:2rem; border-radius:var(--radius-lg); box-shadow:var(--shadow-md);">
                     <div style="display:grid; grid-template-columns: 1fr; gap:1.5rem; margin-bottom:1.5rem;">
@@ -3277,94 +3295,249 @@ class App {
         if (modal) modal.classList.toggle('active');
     }
 
-    askChefibot() {
-        const ingredients = document.getElementById('chefi-ing').value.toLowerCase();
-        const goal = document.getElementById('chefi-goal').value;
-        const resultDiv = document.getElementById('chefi-result');
+    // ====== GASTROMENTE ENGINE ======
+    gmMood = 5; // Default mood
 
-        if (!ingredients && !goal) {
-            this.showToast('¡Dime algo para poder ayudarte!', 'fa-robot');
+    gmSetMood(level) {
+        this.gmMood = level;
+        document.querySelectorAll('.gm-mood-btn').forEach(b => {
+            b.style.borderColor = 'var(--border-color)';
+            b.style.background = 'var(--card-bg)';
+        });
+        const labels = { 2: '😴 Sin energía', 5: '😊 Normal', 9: '🔥 Con ganas' };
+        document.querySelectorAll('.gm-mood-btn').forEach(b => {
+            if (b.textContent.trim() === labels[level]) {
+                b.style.borderColor = 'var(--primary-color)';
+                b.style.background = 'rgba(211,84,0,0.1)';
+            }
+        });
+    }
+
+    gmAddMsg(type, html) {
+        const chat = document.getElementById('gm-chat');
+        const msg = document.createElement('div');
+        msg.className = `gm-msg ${type}`;
+        msg.style.animation = 'fadeInUp 0.4s ease';
+        if (type === 'bot') {
+            msg.innerHTML = `<div class="gm-avatar"><i class="fa-solid fa-hat-wizard"></i></div><div class="gm-bubble">${html}</div>`;
+        } else {
+            msg.innerHTML = `<div class="gm-bubble user-bubble">${html}</div>`;
+        }
+        chat.appendChild(msg);
+        chat.scrollTop = chat.scrollHeight;
+    }
+
+    gmSurprise() {
+        const random = mockRecipes[Math.floor(Math.random() * Math.min(50, mockRecipes.length))];
+        this.gmAddMsg('user', '🎲 ¡Sorpréndeme!');
+        this.gmAddMsg('bot', `
+            <p>¡Toma esta! Sin pensarlo dos veces:</p>
+            ${this.gmBuildRecipeCard(random, '🎯 Tu golpe de suerte')}
+            <p style="margin-top:0.6rem; font-size:0.8rem; color:var(--text-light); font-style:italic;">A veces la mejor receta es la que no buscabas. 😉</p>
+        `);
+    }
+
+    gmAnalyze() {
+        const ingredients = (document.getElementById('gm-ingredients')?.value || '').trim();
+        const timeLimit = parseInt(document.getElementById('gm-time')?.value || '30');
+        const people = parseInt(document.getElementById('gm-people')?.value || '2');
+        const mood = this.gmMood;
+
+        if (!ingredients) {
+            this.showToast('Dime al menos un ingrediente para empezar', 'fa-hat-wizard');
             return;
         }
 
-        resultDiv.innerHTML = `
-            <div style="text-align:center; padding:1.5rem;">
+        // Phase transition: hide form, show user message
+        const phaseEl = document.getElementById('gm-phase-listen');
+        if (phaseEl) phaseEl.style.display = 'none';
+
+        const moodLabel = mood <= 3 ? 'sin energía' : (mood >= 7 ? 'con muchas ganas' : 'normal');
+        this.gmAddMsg('user', `Tengo <strong>${ingredients}</strong>, dispongo de <strong>${timeLimit} min</strong>, somos <strong>${people}</strong> y estoy <strong>${moodLabel}</strong>.`);
+
+        // Loading
+        this.gmAddMsg('bot', `
+            <div style="display:flex; align-items:center; gap:0.6rem;">
                 <div class="typing-dots"><span></span><span></span><span></span></div>
-                <p style="font-size:0.85rem; color:var(--text-light); margin-top:0.5rem;">ChefiBot está analizando el catálogo...</p>
+                <span style="font-size:0.85rem; color:var(--text-light);">Analizando tu despensa...</span>
             </div>
-        `;
+        `);
 
         setTimeout(() => {
-            const userIngs = ingredients.split(',').map(i => i.trim()).filter(i => i);
-            
-            // Score all recipes
+            // Remove loading message
+            const chat = document.getElementById('gm-chat');
+            chat.removeChild(chat.lastChild);
+
+            const userIngs = ingredients.split(',').map(i => i.trim().toLowerCase()).filter(i => i);
+            const maxTime = timeLimit;
+
+            // Score recipes
             let scored = mockRecipes.map(recipe => {
                 let score = 0;
-                let goalMatch = true;
-                
-                // Objective match
-                if (goal) {
-                    const normalizedGoal = goal.toLowerCase();
-                    const isGanar = normalizedGoal.includes('ganar') || normalizedGoal.includes('masa') || normalizedGoal.includes('músculo') || normalizedGoal.includes('volumen');
-                    const isPerder = normalizedGoal.includes('perder') || normalizedGoal.includes('definición') || normalizedGoal.includes('bajar');
-                    
-                    const hasGanarTag = recipe.tags.includes('Ganar peso') || (recipe.macros?.protein > 28 && recipe.macros?.calories > 500);
-                    const hasPerderTag = recipe.tags.includes('Perder peso') || (recipe.macros?.calories < 400);
+                const recipeTime = parseInt(recipe.time) || 30;
 
-                    if (isGanar && !hasGanarTag) score -= 50; // Penalty instead of boolean block
-                    if (isPerder && !hasPerderTag) score -= 50;
-                    
-                    if ((isGanar && hasGanarTag) || (isPerder && hasPerderTag)) score += 30;
-                }
+                // Time filter
+                if (recipeTime <= maxTime) score += 15;
+                else if (recipeTime <= maxTime + 10) score += 5;
+                else score -= 20;
 
-                // Ingredient/Title match (High priority)
+                // Ingredient match
                 userIngs.forEach(userIng => {
-                    const lowIng = userIng.toLowerCase();
-                    if (recipe.ingredients.some(ri => ri.toLowerCase().includes(lowIng)) || 
-                        recipe.title.toLowerCase().includes(lowIng) ||
-                        recipe.tags.some(rt => rt.toLowerCase().includes(lowIng))) {
-                        score += 40; // High score for ingredient match
+                    if (recipe.ingredients.some(ri => ri.toLowerCase().includes(userIng)) ||
+                        recipe.title.toLowerCase().includes(userIng)) {
+                        score += 40;
                     }
                 });
 
-                return { recipe, score };
+                // Mood-based: tired people want easy recipes
+                if (mood <= 3 && recipe.difficulty === 'Fácil') score += 20;
+                if (mood >= 7 && recipe.difficulty === 'Difícil') score += 10;
+
+                return { recipe, score, time: recipeTime };
             });
 
-            // Filter out non-matches and sort
-            const bestMatches = scored
-                .filter(s => s.score > 0)
-                .sort((a, b) => b.score - a.score)
-                .slice(0, 3);
+            const matches = scored.filter(s => s.score > 20).sort((a, b) => b.score - a.score);
 
-            if (bestMatches.length > 0) {
-                resultDiv.innerHTML = `
-                    <div style="margin-top:1.5rem; animation:fadeIn 0.4s ease;">
-                        <p style="font-size:0.9rem; margin-bottom:1rem; font-weight:600; color:var(--primary-color);">
-                            <i class="fa-solid fa-wand-magic-sparkles"></i> He encontrado ${bestMatches.length} opciones ideales:
-                        </p>
-                        <div style="display:flex; flex-direction:column; gap:0.8rem;">
-                            ${bestMatches.map(s => `
-                                <div class="chefi-card" onclick="app.navigate('recipe', '${s.recipe.id}')" style="margin:0; cursor:pointer;">
-                                    <h4 style="margin:0; font-size:0.95rem; color:var(--text-dark);">${s.recipe.title}</h4>
-                                    <p style="font-size:0.75rem; color:var(--text-light); margin-top:0.2rem;">
-                                        <i class="fa-regular fa-clock"></i> ${s.recipe.time} • 
-                                        <i class="fa-solid fa-fire"></i> ${s.recipe.macros?.calories || 'N/A'} kcal • 
-                                        <i class="fa-solid fa-dumbbell"></i> ${s.recipe.macros?.protein || 'N/A'}g prot
-                                    </p>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                `;
-            } else {
-                resultDiv.innerHTML = `
-                    <div style="margin-top:1.5rem; text-align:center; animation:fadeIn 0.4s ease;">
-                        <i class="fa-solid fa-face-frown" style="font-size:2rem; color:var(--text-light); margin-bottom:1rem;"></i>
-                        <p style="font-size:0.9rem; color:var(--text-light);">No he encontrado nada exacto para esos ingredientes, pero te invito a explorar la sección de recetas.</p>
+            if (matches.length === 0) {
+                this.gmAddMsg('bot', `
+                    <p>Hmm, con esos ingredientes no encuentro una combinación perfecta. Pero no te rindas:</p>
+                    <p style="margin-top:0.5rem;">Prueba con algo más versátil como <strong>huevos, arroz o pasta</strong> — son el comodín de cualquier cocina. 🃏</p>
+                    <button onclick="document.getElementById('gm-phase-listen').style.display='block'" class="chefibot-submit" style="margin-top:0.8rem; font-size:0.85rem; padding:0.6rem 1.2rem;">
+                        <span>Intentar de nuevo</span>
+                    </button>
+                `);
+                return;
+            }
+
+            // Option A: Pragmatic (fastest, easiest)
+            const optA = matches.find(m => m.recipe.difficulty === 'Fácil') || matches[0];
+            // Option B: Experience (highest score, more complex)
+            const optB = matches.find(m => m !== optA && m.recipe.difficulty !== 'Fácil') || matches[1] || matches[0];
+
+            const isTired = mood <= 3;
+            const toneIntro = isTired
+                ? `<p>Entendido. Cero estrés, máximo sabor. Te lo pongo fácil:</p>`
+                : `<p>¡Genial! He encontrado dos caminos para ti. Elige tu aventura:</p>`;
+
+            let responseHtml = toneIntro;
+
+            // OPTION A
+            responseHtml += `
+                <div style="margin-top:1rem;">
+                    <p style="font-weight:700; color:var(--primary-color); font-size:0.9rem;">⚡ Opción A: La Pragmática</p>
+                    <p style="font-size:0.8rem; color:var(--text-light); margin-bottom:0.5rem;">${isTired ? 'Mínimo esfuerzo, máximo resultado.' : 'Rápida, fiable y deliciosa.'}</p>
+                    ${this.gmBuildRecipeCard(optA.recipe, '⚡ Rápida y eficaz')}
+                </div>
+            `;
+
+            // OPTION B (if different)
+            if (optB && optB.recipe.id !== optA.recipe.id) {
+                responseHtml += `
+                    <div style="margin-top:1rem;">
+                        <p style="font-weight:700; color:var(--secondary-color, #2c3e50); font-size:0.9rem;">🎨 Opción B: La Experiencia</p>
+                        <p style="font-size:0.8rem; color:var(--text-light); margin-bottom:0.5rem;">${isTired ? 'Para cuando recuperes fuerzas.' : 'Para disfrutar cocinando.'}</p>
+                        ${this.gmBuildRecipeCard(optB.recipe, '🎨 Para disfrutar')}
                     </div>
                 `;
             }
+
+            // Substitution Matrix
+            responseHtml += `
+                <div style="margin-top:1rem; padding:0.8rem; background:rgba(0,0,0,0.03); border-radius:var(--radius-md); border-left:3px solid var(--primary-color);">
+                    <p style="font-weight:700; font-size:0.85rem; margin-bottom:0.4rem;">🔄 Matriz de Sustitución</p>
+                    <p style="font-size:0.8rem; color:var(--text-light); line-height:1.5;">
+                        ${this.gmGetSubstitutions(optA.recipe)}
+                    </p>
+                </div>
+            `;
+
+            // Panic Button + Second Life
+            responseHtml += `
+                <div style="margin-top:0.8rem; padding:0.8rem; background:rgba(231,76,60,0.05); border-radius:var(--radius-md); border-left:3px solid #e74c3c;">
+                    <p style="font-weight:700; font-size:0.85rem; margin-bottom:0.4rem;">🆘 Botón de Pánico</p>
+                    <p style="font-size:0.8rem; color:var(--text-light);">${this.gmGetPanicTip(optA.recipe)}</p>
+                </div>
+                <div style="margin-top:0.8rem; padding:0.8rem; background:rgba(39,174,96,0.05); border-radius:var(--radius-md); border-left:3px solid #27ae60;">
+                    <p style="font-weight:700; font-size:0.85rem; margin-bottom:0.4rem;">♻️ Segunda Vida</p>
+                    <p style="font-size:0.8rem; color:var(--text-light);">${this.gmGetSecondLife(optA.recipe)}</p>
+                </div>
+            `;
+
+            // Retry button
+            responseHtml += `
+                <button onclick="document.getElementById('gm-phase-listen').style.display='block'" class="chefibot-submit" style="margin-top:1rem; font-size:0.85rem; padding:0.6rem 1.2rem;">
+                    <span>Buscar otra cosa</span> <i class="fa-solid fa-rotate"></i>
+                </button>
+            `;
+
+            this.gmAddMsg('bot', responseHtml);
         }, 1200);
+    }
+
+    gmBuildRecipeCard(recipe, label) {
+        return `
+            <div class="chefi-card" onclick="app.navigate('recipe', '${recipe.id}'); app.toggleChefibot();" style="margin:0; cursor:pointer; padding:0.8rem; border-radius:var(--radius-md); border:1px solid var(--border-color); transition:var(--transition);">
+                <div style="display:flex; align-items:center; gap:0.8rem;">
+                    <img src="${recipe.image}" alt="${recipe.title}" style="width:50px; height:50px; border-radius:var(--radius-sm); object-fit:cover;">
+                    <div style="flex:1;">
+                        <h4 style="margin:0; font-size:0.9rem; color:var(--text-dark);">${recipe.title}</h4>
+                        <p style="font-size:0.75rem; color:var(--text-light); margin-top:0.2rem;">
+                            <i class="fa-regular fa-clock"></i> ${recipe.time} · 
+                            <i class="fa-solid fa-fire"></i> ${recipe.macros?.calories || '?'} kcal · 
+                            ${recipe.difficulty}
+                        </p>
+                    </div>
+                </div>
+                ${recipe.chefTip ? `<p style="font-size:0.75rem; color:var(--primary-color); margin-top:0.4rem; font-style:italic;">💡 ${recipe.chefTip}</p>` : ''}
+            </div>
+        `;
+    }
+
+    gmGetSubstitutions(recipe) {
+        const subs = {
+            'arroz': 'quinoa o cuscús', 'pasta': 'espaguetis de calabacín o arroz', 'pollo': 'pavo o tofu',
+            'ternera': 'cerdo o seitán', 'salmón': 'trucha o atún', 'tofu': 'tempeh o garbanzos',
+            'leche': 'bebida de avena o almendra', 'queso': 'levadura nutricional', 'mantequilla': 'aceite de oliva o ghee',
+            'huevos': 'chía remojada (1cda=1 huevo)', 'pan': 'tortilla de maíz o tostada de arroz',
+            'nata': 'leche de coco', 'azúcar': 'miel, stevia o dátiles', 'harina': 'harina de almendra o avena'
+        };
+        let found = [];
+        recipe.ingredients.forEach(ing => {
+            const low = ing.toLowerCase();
+            Object.keys(subs).forEach(key => {
+                if (low.includes(key) && found.length < 3) {
+                    found.push(`Si no tienes <strong>${key}</strong>, usa <strong>${subs[key]}</strong>.`);
+                }
+            });
+        });
+        return found.length > 0 ? found.join('<br>') : 'Esta receta es bastante flexible. Usa lo que tengas a mano.';
+    }
+
+    gmGetPanicTip(recipe) {
+        const tips = [
+            'Si se te pasa de sal, añade un chorrito de limón o una patata pelada mientras cuece.',
+            'Si la salsa queda demasiado líquida, sube el fuego 2 minutos sin tapa o añade una cucharada de maizena disuelta.',
+            'Si se te pega al fondo, no rasques. Cambia de sartén y añade un poco de caldo caliente.',
+            'Si la carne queda seca, córtala fina y báñala en una salsa rápida de soja + miel + ajo.',
+            'Si el plato queda soso, un toque de vinagre balsámico o unas escamas de sal gorda hacen milagros.'
+        ];
+        const cat = recipe.category?.toLowerCase() || '';
+        if (cat.includes('postre')) return 'Si el postre no cuaja, sírvelo en vasitos como mousse. Nadie notará nada. 😉';
+        return tips[recipe.title.length % tips.length];
+    }
+
+    gmGetSecondLife(recipe) {
+        const cat = recipe.category?.toLowerCase() || '';
+        if (cat.includes('comida') || cat.includes('cena')) {
+            const ideas = [
+                `Las sobras de <strong>${recipe.title}</strong> son perfectas para un wrap de mediodía: enrolla con tortilla, lechuga y salsa.`,
+                `Calienta las sobras con un huevo batido y tendrás un revuelto gourmet en 5 minutos.`,
+                `Tritura las sobras con un poco de caldo y obtendrás una crema reconfortante.`
+            ];
+            return ideas[recipe.title.length % ideas.length];
+        }
+        if (cat.includes('desayuno')) return 'Guarda en tupper. Mañana tendrás un desayuno listo en 0 minutos.';
+        return 'Congela las porciones sobrantes en bolsas zip. Tendrás comida lista para emergencias.';
     }
 
     calculateMatch(recipeIngredients) {
@@ -3433,9 +3606,9 @@ class App {
                         <span><i class="fa-regular fa-clock"></i> ${recipe.time}</span>
                         <span><i class="fa-solid fa-fire"></i> ${recipe.macros?.calories || '450'} kcal</span>
                     </div>
-                    <p class="card-desc" style="font-size:0.85rem; line-height:1.5; height: 3em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">${recipe.description}</p>
+                    <p class="card-desc">${recipe.description}</p>
                     
-                    <div style="margin-top:1.2rem; display:flex; gap:0.5rem;">
+                    <div style="margin-top:auto; display:flex; gap:0.5rem; padding-top:1rem;">
                         <button onclick="app.addToShoppingList('${recipe.id}', event)" class="btn-action" style="flex:1; font-size:0.8rem; padding:0.6rem; border-radius:var(--radius-md); background:rgba(211, 84, 0, 0.05); border-color:transparent;">
                             <i class="fa-solid fa-basket-shopping"></i> Lista
                         </button>
