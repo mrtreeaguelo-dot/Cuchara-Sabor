@@ -3541,10 +3541,10 @@ class App {
     }
 
     calculateMatch(recipeIngredients) {
-        if(!this.pantryItems || this.pantryItems.length === 0) return null;
+        if(!this.pantry || this.pantry.length === 0) return null;
         let matchCount = 0;
         recipeIngredients.forEach(ing => {
-            const hasIt = this.pantryItems.some(pItem => ing.toLowerCase().includes(pItem.toLowerCase()));
+            const hasIt = this.pantry.some(pItem => ing.toLowerCase().includes(pItem.toLowerCase()));
             if(hasIt) matchCount++;
         });
         return Math.round((matchCount / recipeIngredients.length) * 100);
