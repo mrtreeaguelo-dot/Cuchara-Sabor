@@ -1418,12 +1418,12 @@ class App {
         
         const recipes = mockRecipes.slice(0, this.recipesToShow);
         const featuredRecipes = [
-            { id: 'curry-lentejas', img: 'https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?w=600&q=80&fit=crop' },
-            { id: 'salmon-esparragos', img: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=600&q=80&fit=crop' },
-            { id: 'sushi-maki', img: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=600&q=80&fit=crop' },
-            { id: 'shakshuka-tunecina', img: 'https://images.unsplash.com/photo-1590412200988-a436970781fa?w=600&q=80&fit=crop' },
-            { id: 'tacos-pastor', img: 'https://images.unsplash.com/photo-1551504734-5ee1c4a1479b?w=600&q=80&fit=crop' },
-            { id: 'pasta-carbonara', img: 'https://images.unsplash.com/photo-1612874742237-6526221588e3?w=600&q=80&fit=crop' }
+            { id: 'curry-lentejas', img: './img/curry_lentejas.png' },
+            { id: 'salmon-esparragos', img: './img/salmon_horno.png' },
+            { id: 'sushi-maki', img: './img/maki_sushi.png' },
+            { id: 'shakshuka-tunecina', img: './img/shakshuka.png' },
+            { id: 'tacos-pastor', img: './img/tacos_pastor.png' },
+            { id: 'pasta-carbonara', img: './img/pasta_carbonara.png' }
         ];
 
         const featuredHtml = featuredRecipes.map((item, index) => {
@@ -2133,7 +2133,7 @@ class App {
         this.contentDiv.innerHTML = `
             <div class="page-container">
                 <h1>Sobre Nosotros</h1>
-                <p style="font-size: 1.2rem; line-height: 1.8; color: var(--text-dark); margin-bottom: 2rem;">En <strong>Cuchara y Sabor</strong>, empoderamos tu cocina con recetas claras y adaptables.</p>
+                <p style="font-size: 1.2rem; line-height: 1.8; color: var(--text-dark); margin-bottom: 2rem;">En <strong>GastroMente</strong>, empoderamos tu cocina con recetas claras, adaptables y guiadas por Inteligencia Artificial.</p>
             </div>
         `;
     }
@@ -3566,7 +3566,6 @@ class App {
 
         const nutriScore = this.calculateNutriScore(recipe);
         const isFav = this.favorites.includes(recipe.id);
-        const matchPercent = this.calculateMatch(recipe.ingredients);
 
         let idHash = 0;
         for(let i=0; i<recipe.id.length; i++) idHash += recipe.id.charCodeAt(i);
@@ -3576,8 +3575,7 @@ class App {
         return `
             <article class="recipe-card reveal-on-scroll" data-goal="${goal}" style="animation-delay: ${index * 0.05}s" onclick="app.navigate('recipe', '${recipe.id}')">
                 <div class="card-img-container">
-                    ${matchPercent !== null ? `<div class="match-badge">${matchPercent}% Match</div>` : ''}
-                    <img src="${recipe.image}" alt="${recipe.title}" loading="lazy" onload="this.classList.add('loaded')" onerror="this.src='https://images.unsplash.com/photo-1495521821757-a1efb6729352?q=80&w=600&auto=format&fit=crop'; this.classList.add('loaded')">
+                    <img src="${recipe.image}" alt="${recipe.title}" loading="lazy" onload="this.classList.add('loaded')" onerror="this.src='./img/salmon_horno.png'; this.classList.add('loaded')">
                     
                     <div class="card-tags" style="top: 0.8rem; left: 0.8rem;">
                         <span class="tag tag-${this.slugify(recipe.category)} glass-effect">${recipe.category}</span>

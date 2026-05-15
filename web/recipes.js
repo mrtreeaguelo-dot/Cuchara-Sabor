@@ -3,7 +3,7 @@ export const mockRecipes = [
         id: 'curry-lentejas',
         title: 'Curry Cremoso de Lentejas y Coco',
         description: 'Un plato reconfortante, lleno de especias cálidas y muy fácil de preparar. Ideal para entrar en calor.',
-        image: 'https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?w=600&fit=crop',
+        image: './img/curry_lentejas.png',
         time: '25 min',
         difficulty: 'Fácil',
         category: 'Comidas',
@@ -40,7 +40,7 @@ export const mockRecipes = [
         id: 'desayuno-gym-pancakes',
         title: 'Tortitas de Avena y Plátano (Gym-Ready)',
         description: 'Desayuno alto en proteínas y carbohidratos complejos, ideal para antes o después de entrenar.',
-        image: 'https://images.unsplash.com/photo-1528207776546-365bb710ee93?w=600&q=80&fit=crop',
+        image: './img/tortitas_avena.png',
         time: '15 min',
         difficulty: 'Fácil',
         category: 'Desayunos',
@@ -71,7 +71,7 @@ export const mockRecipes = [
         id: 'desayuno-shakshuka',
         title: 'Shakshuka Tradicional Tunecina',
         description: 'Huevos escalfados en una salsa de tomate especiada, pimientos y cebolla. Un festín internacional.',
-        image: 'https://images.unsplash.com/photo-1590412200988-a436970781fa?w=600&q=80&fit=crop',
+        image: './img/shakshuka.png',
         time: '25 min',
         difficulty: 'Media',
         category: 'Desayunos',
@@ -102,7 +102,7 @@ export const mockRecipes = [
         id: 'desayuno-french-toast',
         title: 'French Toast con Canela y Miel',
         description: 'La versión gourmet de las tostadas francesas, perfectas para un domingo especial.',
-        image: 'https://images.unsplash.com/photo-1484723088339-fe7821a10a6a?w=600&q=80&fit=crop',
+        image: './img/french_toast.png',
         time: '20 min',
         difficulty: 'Fácil',
         category: 'Desayunos',
@@ -133,7 +133,7 @@ export const mockRecipes = [
         id: 'desayuno-avocado-toast',
         title: 'Huevos con Aguacate y Masa Madre',
         description: 'El desayuno salado definitivo: tostada crujiente con base cremosa y huevos al punto.',
-        image: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=600&q=80&fit=crop',
+        image: './img/huevos_aguacate.png',
         time: '12 min',
         difficulty: 'Fácil',
         category: 'Desayunos',
@@ -164,7 +164,7 @@ export const mockRecipes = [
         id: 'desayuno-overnight-oats',
         title: 'Overnight Oats con Frutos Rojos',
         description: 'Desayuno frío sin cocción, ideal para llevar o comer rápido por la mañana.',
-        image: 'https://images.unsplash.com/photo-1516746874112-7d04e7e6005b?w=600&q=80&fit=crop',
+        image: './img/overnight_oats.png',
         time: '5 min (+reposo)',
         difficulty: 'Fácil',
         category: 'Desayunos',
@@ -195,7 +195,7 @@ export const mockRecipes = [
         id: 'salmon-esparragos',
         title: 'Salmón al Horno con Costra de Hierbas',
         description: 'Una cena elegante, ligera y lista en menos de media hora.',
-        image: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=600&fit=crop',
+        image: './img/salmon_horno.png',
         time: '20 min',
         difficulty: 'Fácil',
         category: 'Cenas',
@@ -226,7 +226,7 @@ export const mockRecipes = [
         id: 'sushi-maki',
         title: 'Maki Sushi Variado',
         description: 'Aprende a preparar los clásicos rollos de sushi japoneses en casa.',
-        image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=600&fit=crop',
+        image: './img/maki_sushi.png',
         time: '50 min',
         difficulty: 'Media',
         category: 'Comidas',
@@ -257,7 +257,7 @@ export const mockRecipes = [
         id: 'ramen-tonkotsu',
         title: 'Ramen Tonkotsu Casero',
         description: 'Sopa japonesa intensa con caldo de cerdo cocinado a fuego lento.',
-        image: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=600&fit=crop',
+        image: './img/ramen_tonkotsu.png',
         time: '4 h',
         difficulty: 'Difícil',
         category: 'Comidas',
@@ -288,7 +288,7 @@ export const mockRecipes = [
         id: 'paella-valenciana',
         title: 'Paella Valenciana Tradicional',
         description: 'El plato más emblemático de la cocina española hecho a leña.',
-        image: 'https://images.unsplash.com/photo-1534080564607-c98752441051?w=600&fit=crop',
+        image: './img/paella_valenciana.png',
         time: '60 min',
         difficulty: 'Media',
         category: 'Comidas',
@@ -321,7 +321,7 @@ export const mockRecipes = [
         id: 'tacos-pastor',
         title: 'Tacos al Pastor',
         description: 'La joya de la corona de la comida callejera mexicana.',
-        image: 'https://images.unsplash.com/photo-1551504734-5ee1c4a1479b?w=600&fit=crop',
+        image: './img/tacos_pastor.png',
         time: '40 min',
         difficulty: 'Media',
         category: 'Comidas',
@@ -352,7 +352,7 @@ export const mockRecipes = [
         id: 'moussaka-griega',
         title: 'Moussaka Griega de Berenjena',
         description: 'Pastel de capas con berenjena, carne picada y bechamel.',
-        image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&fit=crop',
+        image: './img/moussaka.png',
         time: '75 min',
         difficulty: 'Media',
         category: 'Comidas',
@@ -383,7 +383,7 @@ export const mockRecipes = [
         id: 'pad-thai',
         title: 'Pad Thai de Gambas',
         description: 'El plato de fideos salteados más famoso de Tailandia.',
-        image: 'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=600&fit=crop',
+        image: './img/pad_thai.png',
         time: '25 min',
         difficulty: 'Fácil',
         category: 'Cenas',
@@ -414,7 +414,7 @@ export const mockRecipes = [
         id: 'butter-chicken',
         title: 'Butter Chicken (Murgh Makhani)',
         description: 'Pollo tierno en una salsa de tomate y mantequilla extremadamente cremosa.',
-        image: 'https://images.unsplash.com/photo-1603894584134-f1c917837139?w=600&fit=crop',
+        image: './img/butter_chicken.png',
         time: '45 min',
         difficulty: 'Media',
         category: 'Cenas',
@@ -445,7 +445,7 @@ export const mockRecipes = [
         id: 'arepas-reina',
         title: 'Arepas Reina Pepiada',
         description: 'El clásico venezolano de arepa rellena de ensalada de pollo y aguacate.',
-        image: 'https://images.unsplash.com/photo-1548943487-a2e4e43b4853?w=600&fit=crop',
+        image: './img/arepas_reina.png',
         time: '30 min',
         difficulty: 'Fácil',
         category: 'Comidas',
@@ -476,7 +476,7 @@ export const mockRecipes = [
         id: 'dim-sum',
         title: 'Dim Sum de Gambas (Har Gow)',
         description: 'Dumplings chinos al vapor con masa translúcida y relleno de gambas.',
-        image: 'https://images.unsplash.com/photo-1496116218417-1a781b1c416c?w=600&fit=crop',
+        image: './img/dim_sum.png',
         time: '60 min',
         difficulty: 'Difícil',
         category: 'Comidas',
@@ -506,7 +506,7 @@ export const mockRecipes = [
         id: 'ceviche-peruano',
         title: 'Ceviche Peruano Clásico',
         description: 'Pescado fresco marinado en cítricos, ají y cilantro.',
-        image: 'https://images.unsplash.com/photo-1535399831218-d5bd36d1a6b3?w=600&fit=crop',
+        image: './img/ceviche.png',
         time: '20 min',
         difficulty: 'Fácil',
         category: 'Comidas',
@@ -537,7 +537,7 @@ export const mockRecipes = [
         id: 'pasta-carbonara',
         title: 'Pasta Carbonara Auténtica',
         description: 'La verdadera receta italiana: sin nata, solo huevo, pecorino, guanciale y pimienta.',
-        image: 'https://images.unsplash.com/photo-1612874742237-6526221588e3?w=600&q=80&fit=crop',
+        image: './img/pasta_carbonara.png',
         time: '15 min',
         difficulty: 'Media',
         category: 'Comidas',
@@ -668,11 +668,30 @@ for (let i = 1; i <= 488; i++) {
         allergens = [...protObj.allergens, ...baseObj.allergens];
     }
     
+    let catImage = './img/salmon_horno.png';
+    if (category === 'Desayunos') {
+        catImage = (i % 2 === 0) ? './img/huevos_aguacate.png' : './img/tortitas_avena.png';
+    } else if (category === 'Postres' || category === 'Snacks') {
+        catImage = (i % 2 === 0) ? './img/french_toast.png' : `./img/postre_${(i % 4) + 1}.png`;
+    } else if (culture === 'Mexicana' || culture === 'Peruana' || culture === 'Venezolana') {
+        catImage = (i % 3 === 0) ? './img/tacos_pastor.png' : (i % 2 === 0) ? './img/ceviche.png' : './img/arepas_reina.png';
+    } else if (culture === 'Japonesa' || culture === 'Coreana' || culture === 'China' || culture === 'Vietnamita' || culture === 'Tailandesa') {
+        catImage = (i % 4 === 0) ? './img/maki_sushi.png' : (i % 3 === 0) ? './img/ramen_tonkotsu.png' : (i % 2 === 0) ? './img/pad_thai.png' : './img/dim_sum.png';
+    } else if (culture === 'Italiana' || culture === 'Griega') {
+        catImage = (i % 2 === 0) ? './img/pasta_carbonara.png' : './img/moussaka.png';
+    } else if (culture === 'Española') {
+        catImage = './img/paella_valenciana.png';
+    } else if (culture === 'India' || culture === 'Marroquí' || culture === 'Turca' || culture === 'Libanesa' || culture === 'Etíope') {
+        catImage = (i % 3 === 0) ? './img/butter_chicken.png' : (i % 2 === 0) ? './img/shakshuka.png' : './img/curry_lentejas.png';
+    } else {
+        catImage = (i % 2 === 0) ? './img/salmon_horno.png' : `./img/comida_${(i % 4) + 1}.png`;
+    }
+
     const generatedRecipe = {
         id: `recipe-${i}`,
         title: title,
         description: description,
-        image: `https://images.unsplash.com/photo-${1500000000000 + (i * 123) % 100000}?w=600&fit=crop&q=60`,
+        image: catImage,
         time: (category === 'Postres' || category === 'Snacks') ? `${15 + (i % 15)} min` : `${25 + (i % 35)} min`,
         difficulty: difficulty,
         category: category,
